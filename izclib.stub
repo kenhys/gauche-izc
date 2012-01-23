@@ -1,0 +1,1454 @@
+;;;
+;;; izclib.stub
+;;;
+
+"
+#include \"izc.h\"
+"
+
+;; The following entry is a dummy one.
+;; Replace it for your definitions.
+(define-constant CS_ERR_NONE 0)
+(define-constant CS_ERR_GETVALUE -1)
+
+(define-type <csint> "CSint*" "csint"
+  "CSINT_P" "CSINT_UNBOX" "CSINT_BOX")
+(define-type <csint-array> "CSint**" "csint-array"
+  "CSINTARRAY_P" "CSINTARRAY_UNBOX" "CSINTARRAY_BOX")
+
+"
+/* NOTE: global proc object. so don't use this in multithread code.*/
+static ScmObj g_findFreeVarProc = SCM_NIL;
+static ScmObj g_criteriaProc = SCM_NIL;
+static ScmObj g_foundProc = SCM_NIL;
+static ScmObj g_backtrackProc = SCM_NIL;
+static int g_errno = 0;
+"
+
+(define-cproc return-true () ::<boolean>
+  (expr "TRUE"))
+(define-cproc return-false () ::<boolean>
+  (expr "FALSE"))
+(define-cproc return-1 () ::<boolean>
+  (expr "1"))
+(define-cproc return-0 () ::<boolean>
+  (expr "0"))
+
+;;
+(define-cproc cs-info
+  (vint::<csint>)
+   (body <boolean>
+         "cs_printf(\"CSint* info(0x%p)\\n\\tdomain: %T\\n\", vint, vint);"
+         "printf(\"\\tname: %s\\n\", cs_getName(vint));"
+         "printf(\"\\tmin: %d\\n\", cs_getMin(vint));"
+         "printf(\"\\tmax: %d\\n\", cs_getMax(vint));"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_TRUE);"))
+
+
+;;  CSint *cs_createCSint(int min, int max);
+(define-cproc cs-create-csint
+  (min::<int>
+   max::<int>) ::<csint>
+   (expr "cs_createCSint(min, max)"))
+
+;; __izwindllexport CSint *cs_createNamedCSint(int min, int max, char *name);
+(define-cproc cs-create-named-csint
+  (min::<int>
+   max::<int>
+   name::<const-cstring>?) ::<csint>
+  (expr "cs_createNamedCSint(min, max, (char*)name)")
+  )
+;; __izwindllexport CSint *CSINT(int n);
+(define-cproc csint(n::<int>) ::<csint>
+  (expr "CSINT(n)"))
+
+;; __izwindllexport CSint *cs_createCSintFromDomain(int *tcoeff, int size);
+;; NOTE: changed int* parameter to list.
+(define-cproc cs-create-csint-from-domain
+  (tcoeff::<list>) ::<csint>
+   (body <csint>
+         "int size = Scm_Length(tcoeff);"
+         "int *pack = calloc(sizeof(int), size);"
+         "int i;"
+         "if (pack != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "pack[i] = SCM_INT_VALUE(Scm_ListRef(tcoeff, i, SCM_UNBOUND));"
+         "}"
+         "SCM_RESULT = cs_createCSintFromDomain(pack, size);"
+         "free(pack);"
+         "} else {"
+         "Scm_Error(\"array of int required, but got NULL\");"
+         "}"))
+
+;; __izwindllexport CSint **cs_createCSintArray(int size, int min, int max);
+;; NOTE: API changed for gauche.
+(define-cproc cs-create-csint-array
+  (size::<int>
+   min::<int>
+   max::<int>)
+  (body <vector>
+        "/* create vector */"
+        "CSint **vars;"
+        "CSint *csint;"
+        "vars = cs_createCSintArray(size, min, max);"
+        "int i;"
+        "if (vars != NULL) {"
+        "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
+        "ScmObj scm;";
+        "for (i = 0; i < size; i++) {"
+        "cs_printf(\"vars[%d] %T\\n\", i, vars[i]);"
+        "Scm_VectorSet(vec, i, CSINT_BOX(vars[i]));"
+        "}"
+        "SCM_RESULT = vec;"
+        "}"))
+
+  ;; __izwindllexport void cs_setName(CSint *vint, char *name);
+(define-cproc cs-set-name
+  (vint::<csint>
+   name::<const-cstring>) ::<void>
+   (body "cs_setName(vint, (char *)name);"))
+
+    ;; __izwindllexport BOOL cs_isFree(CSint* vint);
+(define-cproc cs-is-free
+  (vint::<csint>) ::<boolean>
+   (expr "cs_isFree(vint)"))
+
+;; __izwindllexport BOOL cs_isInstantiated(CSint* vint);
+(define-cproc cs-is-instantiated
+  (vint::<csint>) ::<boolean>
+   (expr "cs_isInstantiated(vint)"))
+
+;; __izwindllexport int cs_getMin(CSint* vint);
+(define-cproc cs-get-min
+  (vint::<csint>) ::<int>
+   (expr "cs_getMin(vint)"))
+;; __izwindllexport int cs_getMax(CSint* vint);
+(define-cproc cs-get-max
+  (vint::<csint>) ::<int>
+   (expr "cs_getMax(vint)"))
+;; __izwindllexport int cs_getNbElements(CSint* vint);
+(define-cproc cs-get-nb-elements
+  (vint::<csint>) ::<int>
+   (expr "cs_getNbElements(vint)"))
+;; __izwindllexport int cs_getNbConstraints(CSint* vint);
+(define-cproc cs-get-nb-constraints
+  (vint::<csint>) ::<int>
+   (expr "cs_getNbConstraints(vint)"))
+;; __izwindllexport char* cs_getName(CSint* vint);
+(define-cproc cs-get-name
+  (vint::<csint>) ::<const-cstring>
+   (expr "cs_getName(vint)"))
+;; __izwindllexport int cs_getValue(CSint *vint);
+(define-cproc cs-get-value
+  (vint::<csint>) ::<int>
+   (expr "cs_getValue(vint)"))
+;; __izwindllexport int cs_getNextValue(CSint *vint, int val);
+(define-cproc cs-get-next-value
+  (vint::<csint>
+   val::<int>) ::<int>
+   (expr "cs_getNextValue(vint, val)"))
+;; __izwindllexport int cs_getPreviousValue(CSint *vint, int val);
+(define-cproc cs-get-previous-value
+  (vint::<csint>
+   val::<int>) ::<int>
+   (expr "cs_getPreviousValue(vint,val)"))
+;;
+;; cs_getDomain returns array of int.
+;; so, cs-get-domain mapped to return list of int.
+;;
+(define-cproc cs-get-domain
+  (vint::<csint>) 
+   (body <list>
+         "int nSize = cs_getNbElements(vint);"
+         "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(nSize, SCM_NIL));"
+         "int i=0;"
+         "int *vals = cs_getDomain(vint);"
+         "for (i = 0; i < nSize; i++) {"
+         "Scm_VectorSet(vec, i, SCM_OBJ(Scm_MakeInteger(vals[i])));";
+         "}"
+         "SCM_RESULT=Scm_VectorToList(vec, 0, -1);"))
+;; __izwindllexport BOOL cs_isIn(CSint *vint, int val);
+(define-cproc cs-is-in
+  (vint::<csint>
+   val::<int>) ::<boolean>
+     (expr "cs_isIn(vint, val)"))
+;; __izwindllexport void cs_printf(const char *control, ...);
+;; (define-cproc cs-printf
+;;   (control::<const-cstring>
+;;    args)
+;;   (body <boolean>
+;;         ""
+;;         "cs_printf(control, (append args(expr "cs_isIn(vint, val)"))
+
+;; __izwindllexport void cs_fprintf(FILE *f, const char *control, ...);
+;; In */
+;; __izwindllexport BOOL cs_InArray(CSint *vint, int *array, int size);
+(define-cproc cs-in-array
+  (vint::<csint>
+   array::<list>)
+   (body <boolean>
+         "int size = Scm_Length(array);"
+         "int *range = calloc(sizeof(int), size);"
+         "int i;"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_FALSE);"
+         "if (range != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "range[i] = SCM_INT_VALUE(Scm_ListRef(array, i, SCM_UNBOUND));"
+         "}"
+         "SCM_RESULT = cs_InArray(vint, range, size);"
+         "free(range);"
+         "} else {"
+         "Scm_Error(\"array of int required, but got NULL\");"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_FALSE);"
+         "}"))
+
+;; __izwindllexport BOOL cs_NotInArray(CSint *vint, int *array, int size);
+(define-cproc cs-not-in-array
+  (vint::<csint>
+   array::<list>)
+   (body <boolean>
+         "int size = Scm_Length(array);"
+         "int *range = calloc(sizeof(int), size);"
+         "int i;"
+         "if (range != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "range[i] = SCM_INT_VALUE(Scm_ListRef(array, i, SCM_UNBOUND));"
+         "}"
+         "SCM_RESULT = cs_NotInArray(vint, range, size);"
+         "free(range);"
+         "} else {"
+         "Scm_Error(\"array of int required, but got NULL\");"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_FALSE);"
+         "}"))
+;; __izwindllexport BOOL cs_InInterval(CSint *vint, int min, int max);
+(define-cproc cs-in-interval
+  (vint::<csint>
+   min::<int>
+   max::<int>) ::<boolean>
+   (expr "cs_InInterval(vint, min, max)"))
+;; __izwindllexport BOOL cs_NotInInterval(CSint *vint, int min, int max);
+(define-cproc cs-not-in-interval
+  (vint::<csint>
+   min::<int>
+   max::<int>) ::<boolean>
+   (expr "cs_NotInInterval(vint, min, max)"))
+;; __izwindllexport BOOL cs_AllNeq(CSint **tint, int size);
+;; NOTE: consider proper api
+(define-cproc cs-all-neq
+  (tint::<csint>?
+   size::<int>) ::<boolean>
+   (expr "cs_AllNeq(&tint, size)"))
+;; Len */
+;; __izwindllexport BOOL cs_Eq(CSint *vint1, CSint *vint2);
+(define-cproc cs-eq-csint
+  (vint1::<csint>
+   vint2::<csint>) ::<boolean>
+   (expr "cs_Eq(vint1, vint2)"))
+;; __izwindllexport BOOL cs_EQ(CSint *vint, int val);
+(define-cproc cs-eq
+  (vint1::<csint>
+   val::<int>) ::<boolean>
+   (expr "cs_EQ(vint1, val)"))
+;; __izwindllexport BOOL cs_Neq(CSint *vint1, CSint *vint2);
+(define-cproc cs-neq-csint
+  (vint1::<csint>
+   vint2::<csint>)
+  (body <boolean>
+        "char ret = cs_Neq(vint1, vint2);"
+        "switch(ret){"
+        "case TRUE:"
+        "case FALSE:"
+        "break;"
+        "default:"
+        "printf(\"g_errno\");g_errno = ret;"
+        "g_errno = ret;"
+        "ret = FALSE;"
+        "break;"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"))
+;; __izwindllexport BOOL cs_NEQ(CSint *vint, int val);
+(define-cproc cs-neq
+  (vint1::<csint>
+   val::<int>)
+  (body <boolean>
+        "char ret = cs_NEQ(vint1, val);"
+        "switch(ret){"
+        "case TRUE:"
+        "case FALSE:"
+        "break;"
+        "default:"
+        "printf(\"g_errno\");"
+        "g_errno = ret;"
+        "ret = FALSE;"
+        "break;"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"))
+;; __izwindllexport BOOL cs_Le(CSint *vint1, CSint *vint2);
+(define-cproc cs-le-csint
+  (vint1::<csint> vint2::<csint>)
+  (body <boolean>
+        "char ret = cs_Le(vint1, vint2);"
+        "switch(ret){"
+        "case TRUE:"
+        "case FALSE:"
+        "break;"
+        "default:"
+        "g_errno = ret;"
+        "ret = FALSE;"
+        "break;"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+;; __izwindllexport BOOL cs_LE(CSint *vint, int val);
+(define-cproc cs-le
+  (vint1::<csint> val::<int>)
+  (body <boolean>
+    "int ret = cs_LE(vint1, val);"
+    "switch(ret){"
+    "case TRUE:"
+    "case FALSE:"
+    "break;"
+    "default:"
+    "g_errno = ret;"
+    "ret = FALSE;"
+    "break;"
+    "}"
+    "SCM_RESULT = SCM_INT_VALUE(ret);"))
+;; __izwindllexport BOOL cs_Ge(CSint *vint1, CSint *vint2);
+(define-cproc cs-ge-csint
+  (vint1::<csint>
+   vint2::<csint>) ::<boolean>
+   (expr "cs_Ge(vint1, vint2)"))
+;; __izwindllexport BOOL cs_GE(CSint *vint, int val);
+(define-cproc cs-ge
+  (vint1::<csint>
+   val::<int>)
+  (body <boolean>
+    "int ret = cs_GE(vint1, val);"
+    "switch(ret){"
+    "case TRUE:"
+    "case FALSE:"
+    "break;"
+    "default:"
+    "g_errno = ret;"
+    "ret = FALSE;"
+    "break;"
+    "}"
+    "SCM_RESULT = SCM_INT_VALUE(ret);"))
+;; __izwindllexport BOOL cs_Lt(CSint *vint1, CSint *vint2);
+(define-cproc cs-lt-csint
+  (vint1::<csint>
+   vint2::<csint>) ::<boolean>
+   (expr "cs_Lt(vint1, vint2)"))
+;; __izwindllexport BOOL cs_LT(CSint *vint, int val);
+(define-cproc cs-lt
+  (vint1::<csint>
+   val::<int>) ::<boolean>
+  (body <boolean>
+    "int ret = cs_LT(vint1, val);"
+    "switch(ret){"
+    "case TRUE:"
+    "case FALSE:"
+    "break;"
+    "default:"
+    "g_errno = ret;"
+    "ret = FALSE;"
+    "break;"
+    "}"
+    "SCM_RESULT = SCM_INT_VALUE(ret);"))
+;; __izwindllexport BOOL cs_Gt(CSint *vint1, CSint *vint2);
+(define-cproc cs-gt-csint
+  (vint1::<csint>
+   vint2::<csint>) ::<boolean>
+   (expr "cs_Gt(vint1, vint2)"))
+;; __izwindllexport BOOL cs_GT(CSint *vint, int val);
+(define-cproc cs-gt
+  (vint1::<csint>
+   val::<int>) ::<boolean>
+  (body <boolean>
+    "int ret = cs_GT(vint1, val);"
+    "switch(ret){"
+    "case TRUE:"
+    "case FALSE:"
+    "break;"
+    "default:"
+    "g_errno = ret;"
+    "ret = FALSE;"
+    "break;"
+    "}"
+    "SCM_RESULT = SCM_INT_VALUE(ret);"))
+;; arith */
+;; __izwindllexport CSint *cs_Add(CSint *vint1, CSint *vint2);
+(define-cproc cs-add
+  (vint1::<csint>
+   vint2::<csint>) ::<csint>
+   (expr "cs_Add(vint1, vint2)"))
+;; __izwindllexport CSint *cs_VAdd(int nbVars, CSint *vint, ...);
+;; NOTE: consider proper API
+;; pending.
+;; (define-cproc cs-vadd
+;;   (vint::<vector>)
+;;   (body <boolean>
+;;         "ScmVector *vec;"
+;;         "CSint *csint;"
+;;         "int size = 0;"
+;;         "if (VECTOR_P(vint) == TRUE){"
+;;         "vec = SCM_VECTOR(vint);"
+;;         "size = SCM_VECTOR_SIZE(vin)"
+;;         "}"))
+;; __izwindllexport CSint *cs_Sub(CSint *vint1, CSint *vint2);
+(define-cproc cs-sub
+  (vint1::<csint>
+   vint2::<csint>) ::<csint>
+   (expr "cs_Sub(vint1, vint2)"))
+;; __izwindllexport CSint *cs_VSub(int nbVars, CSint *vint, ...);
+;; (define-cproc cs-sub
+;;   (vint1::<csint>
+;;    vint2::<csint>) ::<csint>
+;;    (expr "cs_Sub(vint1, vint2)"))
+;; __izwindllexport CSint *cs_Mul(CSint *vint1, CSint *vint2);
+(define-cproc cs-mul
+  (vint1::<csint>
+   vint2::<csint>) ::<csint>
+   (expr "cs_Mul(vint1, vint2)"))
+;; __izwindllexport CSint *cs_VMul(int nbVars, CSint *vint, ...);
+;; __izwindllexport CSint *cs_Div(CSint *vint1, CSint *vint2);
+(define-cproc cs-div
+  (vint1::<csint>
+   vint2::<csint>) ::<csint>
+   (expr "cs_Div(vint1, vint2)"))
+;; __izwindllexport CSint *cs_VDiv(int nbVars, CSint *vint, ...);
+;; __izwindllexport CSint *cs_Sigma(CSint **tint, int size);
+(define-cproc cs-sigma
+  (vint::<vector>)
+  (body <csint>
+        "int size = SCM_VECTOR_SIZE(vint);"
+         "ScmVector* vec = SCM_VECTOR(vint);"
+         "int i;"
+         "CSint **tint = calloc(sizeof(CSint*), size);"
+         "if (tint != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+         "}"
+         "} else {"
+         "printf(\"memory allocation error\");"
+         "}"
+         "SCM_RESULT = cs_Sigma(tint, size);"
+         ))
+
+;; __izwindllexport CSint *cs_ScalProd(CSint **tint, int *tcoeff, int size);
+;; __izwindllexport CSint *cs_VScalProd(int nbVars, CSint *vint, ...);
+;; abs */
+;; __izwindllexport CSint *cs_Abs(CSint *vint);
+(define-cproc cs-abs
+  (vint1::<csint>) ::<csint>
+   (expr "cs_Abs(vint1)"))
+;; minmax */
+;; __izwindllexport CSint *cs_Min(CSint **tint, int size);
+(define-cproc cs-min
+  (vint::<vector>)
+   (body <csint>
+         "int size = SCM_VECTOR_SIZE(vint);"
+         "ScmVector* vec = SCM_VECTOR(vint);"
+         "int i;"
+         "CSint *vint1,*vint2,*min;"
+         "for (i = 0; i < size-1; i++) {"
+         "vint1 = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_UNBOUND));"
+         "vint2 = CSINT_UNBOX(Scm_VectorRef(vec, i+1, SCM_UNBOUND));"
+         "if (cs_Lt(vint1, vint2)){"
+         "min = vint1;"
+         "} else {"
+         "min = vint2;"
+         "}"
+         "}"
+         "SCM_RESULT = min;"))
+;; __izwindllexport CSint *cs_VMin(int nbVars, CSint *vint, ...);
+;; __izwindllexport CSint *cs_Max(CSint **tint, int size);
+(define-cproc cs-max
+  (vint::<vector>)
+   (body <csint>
+         "int size = SCM_VECTOR_SIZE(vint);"
+         "ScmVector* vec = SCM_VECTOR(vint);"
+         "int i;"
+         "CSint *vint1,*vint2,*max;"
+         "for (i = 0; i < size-1; i++) {"
+         "vint1 = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_UNBOUND));"
+         "vint2 = CSINT_UNBOX(Scm_VectorRef(vec, i+1, SCM_UNBOUND));"
+         "if (cs_Lt(vint1, vint2)){"
+         "max = vint2;"
+         "} else {"
+         "max = vint1;"
+         "}"
+         "}"
+         "SCM_RESULT = max;"))
+;; __izwindllexport CSint *cs_VMax(int nbVars, CSint *vint, ...);
+;; if */
+;; __izwindllexport char cs_IfEq(CSint *vint1, CSint *vint2, int val1, int val2);
+(define-cproc cs-if-eq
+  (vint1::<csint>
+   vint2::<csint>
+   val1::<int>
+   val2::<int>)
+   (body <char>
+         "if (cs_isInstantiated(vint1) == TRUE && cs_getValue(vint1) == val1) {"
+         "vint2 = CSINT(val2);"
+         "}"
+         "if (cs_isInstantiated(vint2) == TRUE && cs_getValue(vint2) == val2) {"
+         "vint1 = CSINT(val1);"
+         "}"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_TRUE);"))
+;; __izwindllexport char cs_IfNeq(CSint *vint1, CSint *vint2, int val1, int val2);
+(define-cproc cs-if-neq
+  (vint1::<csint>
+   vint2::<csint>
+   val1::<int>
+   val2::<int>)
+   (body <boolean>
+         "if (cs_IfNeq(vint1, vint2, val1, val2) == TRUE) {"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_FALSE);"
+         "} else {"
+         "SCM_RESULT = SCM_INT_VALUE(SCM_FALSE);"
+         "}"
+         ))
+;; occur */
+;; __izwindllexport CSint *cs_Occur(CSint *vint, int val, CSint **tint, int size);
+(define-cproc cs-occur
+  (vint::<csint>
+   val::<int>
+   array::<vector>)
+  (body <csint>
+         "int size = SCM_VECTOR_SIZE(array);"
+         "ScmVector* vec = SCM_VECTOR(array);"
+         "int i;"
+         "CSint **tint = calloc(sizeof(CSint*), size);"
+         "if (tint != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+         "}"
+         "} else {"
+         "}"
+         "SCM_RESULT = cs_Occur(vint, val, tint, size);"))
+;; __izwindllexport CSint *cs_OccurDomain(int val, CSint **tint, int size);
+;; __izwindllexport BOOL cs_OccurConstraints(CSint *vint, int val, CSint **tint, int size);
+(define-cproc cs-occur-constraints
+  (vint::<csint>
+   val::<int>
+   array::<vector>)
+  (body <boolean>
+         "int size = SCM_VECTOR_SIZE(array);"
+         "ScmVector* vec = SCM_VECTOR(array);"
+         "int i;"
+         "CSint **tint = SCM_NEW_ARRAY(CSint*, size);"
+         "if (tint != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+         "}"
+         "} else {"
+         "Scm_Error(\"failed to allocate CSint*, got NULL.\");"
+         "}"
+         "SCM_RESULT = cs_OccurConstraints(vint, val, tint, size);"))
+
+;; index */
+;; __izwindllexport CSint *cs_Index(CSint **tint, int size, int val);
+(define-cproc cs-index
+  (array::<vector>
+   val::<int>)
+  (body <csint>
+         "int size = SCM_VECTOR_SIZE(array);"
+         "ScmVector* vec = SCM_VECTOR(array);"
+         "int i;"
+         "CSint **tint = calloc(sizeof(CSint*), size);"
+         "if (tint != NULL) {"
+         "for (i = 0; i < size; i++) {"
+         "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+         "}"
+         "} else {"
+         "}"
+         "SCM_RESULT = cs_Index(tint, size, val);"))
+;; element */
+;; __izwindllexport CSint *cs_Element(CSint *index, int *values, int size);
+(define-cproc cs-element
+  (vint::<csint>
+   array::<list>)
+  (body <csint>
+         "int size = Scm_Length(array);"
+         "int *values = calloc(sizeof(int), size);"
+         "if (values != NULL) {"
+         "int i;"
+         "for (i = 0; i < size; i++) {"
+         "values[i] = SCM_INT_VALUE(Scm_ListRef(array, i, 0));"
+         "}"
+         "} else {"
+         "}"
+         "SCM_RESULT = cs_Element(vint, values, size);"))
+;; Search */
+;; __izwindllexport void cs_printStats(void);
+ (define-cproc cs-print-stats ()
+   (body "cs_printStats();"))
+
+;; __izwindllexport void cs_fprintStats(FILE *f);
+;; __izwindllexport CSint* cs_findFreeVar(CSint **allvars, int nbVars);
+(define-cproc cs-find-free-var
+  (vint::<vector>)
+  (body <csint>
+        "int nbVars = SCM_VECTOR_SIZE(vint);"
+        "printf(\"cs-find-free-var called.vector nbVars:%d\\n\", nbVars);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **allvars = calloc(sizeof(CSint*), nbVars);"
+        "if (allvars != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < nbVars; i++) {"
+        "allvars[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, allvars[i]);"
+        "#endif"
+        "}"
+        "} else {"
+        "}"
+        "SCM_RESULT = cs_findFreeVar(allvars, nbVars);"))
+
+;; __izwindllexport CSint* cs_findFreeVarNbElements(CSint **allvars, int nbVars);
+(define-cproc cs-find-free-var-nb-elements
+  (vint::<vector>)
+  (body <csint>
+        "int nbVars = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector nbVars:%d\\n\", nbVars);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **allvars = calloc(sizeof(CSint*), nbVars);"
+        "if (allvars != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < nbVars; i++) {"
+        "allvars[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, allvars[i]);"
+        "#endif"
+        "}"
+        "} else {"
+        "}"
+        "SCM_RESULT = cs_findFreeVarNbElements(allvars, nbVars);"))
+;; __izwindllexport CSint* cs_findFreeVarNbElementsMin(CSint **allvars, int nbVars);
+(define-cproc cs-find-free-var-nb-elements-min
+  (vint::<vector>)
+  (body <csint>
+        "int nbVars = SCM_VECTOR_SIZE(vint);"
+        "printf(\"cs-find-free-var-nb-elements-min called.\\n\");"
+        "printf(\"vector nbVars:%d\\n\", nbVars);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **allvars = calloc(sizeof(CSint*), nbVars);"
+        "if (allvars != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < nbVars; i++) {"
+        "allvars[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, allvars[i]);"
+        "#endif"
+        "}"
+        "} else {"
+        "}"
+        "SCM_RESULT = cs_findFreeVarNbElementsMin(allvars, nbVars);"))
+;; __izwindllexport CSint* cs_findFreeVarNbConstraints(CSint **allvars, int nbVars);
+(define-cproc cs-find-free-var-nb-constraints
+  (vint::<vector>)
+  (body <csint>
+        "int nbVars = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector nbVars:%d\\n\", nbVars);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **allvars = calloc(sizeof(CSint*), nbVars);"
+        "if (allvars != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < nbVars; i++) {"
+        "allvars[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, allvars[i]);"
+        "#endif"
+        "}"
+        "} else {"
+        "}"
+        "SCM_RESULT = cs_findFreeVarNbConstraints(allvars, nbVars);"))
+;; __izwindllexport int cs_getNbFails(void);
+(define-cproc cs-get-nb-fails ()
+  (body <int> "cs_getNbFails();"))
+;; __izwindllexport int cs_getNbChoicePoints(void);
+(define-cproc cs-get-nb-choice-points ()
+  (body <int> "cs_getNbChoicePoints();"))
+
+
+;; __izwindllexport BOOL cs_search(CSint **allvars, int nbVars, CSint* (*findFreeVar)(CSint **allvars, int nbVars));
+"
+static CSint* cs_findFreeVarBridge(CSint **allvars, int nbVars)
+{
+   ScmObj proc = SCM_OBJ(g_findFreeVarProc);
+   ScmObj obj = Scm_MakeVector(nbVars, SCM_NIL);
+   ScmVector *vec = SCM_VECTOR(obj);
+#if defined(DEBUG) && defined(DEBUG_FUNC)
+     printf(\"FUNC: cs_findFreeVarBridge called.\\n\");
+#endif
+   int i = 0;
+   for (i = 0; i < nbVars; i++) {
+     Scm_VectorSet(vec, i, CSINT_BOX(allvars[i]));
+   }
+   ScmObj r;
+   CSint *vint = NULL;
+   if (SCM_PROCEDUREP(proc) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback scheme world find free var\\n\");
+#endif
+     r = Scm_ApplyRec(proc, SCM_OBJ(vec));
+     vint = CSINT_UNBOX(r);
+   } else if (SCM_SYMBOLP(proc)) {
+     if (Scm_EqualP(SCM_OBJ(proc), SCM_OBJ(SCM_INTERN(\"elements\"))) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback cs_findFreeVarNbElements\\n\");
+#endif
+       vint = cs_findFreeVarNbElements(allvars, nbVars);
+     } else if (Scm_EqualP(SCM_OBJ(proc), SCM_OBJ(SCM_INTERN(\"elements-min\"))) == TRUE) {
+                                                                                           #ifdef DEBUG
+     printf(\"callback cs_findFreeVarNbElementsMin\\n\");
+#endif
+       vint = cs_findFreeVarNbElementsMin(allvars, nbVars);
+      
+#ifdef DEBUG
+     cs_printf(\"cs_findFreeVarNbElementsMin, got %T 0x%p\\n\", vint, vint);
+#endif
+     } else if (Scm_EqualP(SCM_OBJ(proc), SCM_OBJ(SCM_INTERN(\"constrains\"))) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback cs_findFreeVarNbConstraints\\n\");
+#endif
+       vint = cs_findFreeVarNbConstraints(allvars, nbVars);
+            
+     } else {
+       Scm_Error(\"symbol elements or elements-min or constrains required as findFreeVar callback type, but got %S\", proc);
+     }
+   } else {
+     /* call default callback. */
+#ifdef DEBUG
+     printf(\"callback default cs_findFreeVar\\n\");
+     for (i = 0; i < nbVars; i++) {
+        cs_printf(\"allvars[%d] %T\\n\", i, allvars[i]);
+     }
+#endif
+     vint = cs_findFreeVar(allvars, nbVars);
+   }
+#ifdef DEBUG
+  if (vint) {
+              cs_printf(\"findFreeVar return vint: %T\\n\", vint);
+  }
+#endif
+  return vint;
+}
+
+int cs_findFreeVarIntBridge(CSint **allvars, int nbVars)
+{
+   ScmObj proc = SCM_OBJ(g_findFreeVarProc);
+   ScmObj obj = Scm_MakeVector(nbVars, SCM_NIL);
+   ScmVector *vec = SCM_VECTOR(obj);
+   int ret = 0;
+   int i = 0;
+   for (i = 0; i < nbVars; i++) {
+     Scm_VectorSet(vec, i, CSINT_BOX(allvars[i]));
+   }
+   ScmObj r;
+   if (SCM_PROCEDUREP(proc) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback scheme world find free var\\n\");
+#endif
+     r = Scm_ApplyRec(proc, SCM_OBJ(vec));
+   } else {
+     /* call default callback. */
+#ifdef DEBUG
+     printf(\"callback default cs_findFreeVar\\n\");
+#endif
+     r = CSINT_BOX(cs_findFreeVar(allvars, nbVars));
+   }
+   ret = SCM_INT_VALUE(r);
+#ifdef DEBUG
+   cs_printf(\"findFreeVarInt return ret: %d\\n\", ret);
+#endif
+   return ret;
+}
+
+
+
+static int cs_criteriaBridge(int index, int val)
+{
+#ifdef DEBUG
+   printf(\"callback cs_criteriaBridge()\\n\");
+#endif
+   ScmObj proc = SCM_OBJ(g_criteriaProc);
+   ScmObj sindex = Scm_MakeInteger(index);
+   ScmObj sval = Scm_MakeInteger(val);
+   int ret;
+   if (SCM_PROCEDUREP(proc) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback scheme world find free var\\n\");
+#endif
+     ret = SCM_INT_VALUE(Scm_ApplyRec(proc, SCM_LIST2(sindex, sval)));
+   } else {
+     /* call default callback. */
+#ifdef DEBUG
+     printf(\"callback default criteria\\n\");
+#endif
+     ret = 0;
+   }
+   return ret;
+}
+
+static void cs_foundBridge(CSint **allvars, int nbVars)
+{
+#if defined(DEBUG) && defined(DEBUG_FUNC)
+   printf(\"callback cs_foundBridge()\\n\");
+#endif
+   ScmObj proc = SCM_OBJ(g_foundProc);
+   ScmObj obj = Scm_MakeVector(nbVars, SCM_NIL);
+   ScmVector *vec = SCM_VECTOR(obj);
+   int i = 0;
+   for (i = 0; i < nbVars; i++) {
+#ifdef DEBUG
+     cs_printf(\"found allvars[%d] %T\\n\", i, allvars[i]);
+#endif
+     Scm_VectorSet(vec, i, CSINT_BOX(allvars[i]));
+   }
+   ScmObj r;
+   if (SCM_PROCEDUREP(proc) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback scheme world (found allvars::<vector>)\\n\");
+     printf(\"vector size %d\\n\", SCM_VECTOR_SIZE(vec));
+     CSint *vint;
+     for (i = 0; i < nbVars; i++) {
+       vint = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));
+       printf(\"%d\\n\", cs_getValue(vint));
+       printf(\"min: %d max: %d value: %d\\n\",
+                    cs_getMin(vint),
+                    cs_getMax(vint),
+                    cs_getValue(vint));
+     }
+#endif
+     r = Scm_ApplyRec(proc, SCM_LIST1(obj));
+   } else {
+     /* call default callback. */
+#ifdef DEBUG
+     printf(\"no callback for (found allvars::<vector>\\n\");
+#endif
+     cs_printf(\"found %A\\n\", allvars);
+   }
+   return;
+}
+
+static void cs_foundWithCostBridge(CSint **allvars, int nbVars, CSint *vint)
+{
+   ScmObj proc = SCM_OBJ(g_findFreeVarProc);
+   ScmObj obj = Scm_MakeVector(nbVars, SCM_NIL);
+   ScmVector *vec = SCM_VECTOR(obj);
+#if defined(DEBUG) && defined(DEBUG_FUNC)
+     printf(\"FUNC: cs_findFreeVarBridge called.\\n\");
+#endif
+   int i = 0;
+   for (i = 0; i < nbVars; i++) {
+     Scm_VectorSet(vec, i, CSINT_BOX(allvars[i]));
+   }
+   ScmObj r;
+   if (SCM_PROCEDUREP(proc) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback scheme world find free var\\n\");
+#endif
+     r = Scm_ApplyRec(proc, SCM_OBJ(vec));
+     vint = CSINT_UNBOX(r);
+   } else if (SCM_SYMBOLP(proc)) {
+     if (Scm_EqualP(SCM_OBJ(proc), SCM_OBJ(SCM_INTERN(\"elements\"))) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback cs_findFreeVarNbElements\\n\");
+#endif
+       vint = cs_findFreeVarNbElements(allvars, nbVars);
+     } else if (Scm_EqualP(SCM_OBJ(proc), SCM_OBJ(SCM_INTERN(\"elements-min\"))) == TRUE) {
+                                                                                           #ifdef DEBUG
+     printf(\"callback cs_findFreeVarNbElementsMin\\n\");
+#endif
+       vint = cs_findFreeVarNbElementsMin(allvars, nbVars);
+      
+     } else if (Scm_EqualP(SCM_OBJ(proc), SCM_OBJ(SCM_INTERN(\"constrains\"))) == TRUE) {
+#ifdef DEBUG
+     printf(\"callback cs_findFreeVarNbConstraints\\n\");
+#endif
+       vint = cs_findFreeVarNbConstraints(allvars, nbVars);
+            
+     } else {
+       Scm_Error(\"symbol elements or elements-min or constrains required as findFreeVar callback type, but got %S\", proc);
+     }
+   } else {
+     /* call default callback. */
+#ifdef DEBUG
+     printf(\"callback default cs_findFreeVar\\n\");
+     for (i = 0; i < nbVars; i++) {
+        cs_printf(\"allvars[%d] %T\\n\", i, allvars[i]);
+     }
+#endif
+     vint = cs_findFreeVar(allvars, nbVars);
+   }
+#ifdef DEBUG
+  if (vint) {
+              cs_printf(\"findFreeVar return vint: %T\\n\", vint);
+  }
+#endif
+}
+"
+
+
+(define-cproc test-vector-set
+  (vint::<vector>)
+  (body <boolean>
+        "int nStatus = SCM_INT_VALUE(SCM_FALSE);"
+        "int nbVars = SCM_VECTOR_SIZE(vint);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "int i;"
+        "for (i = 0; i < nbVars; i++) {"
+        "#ifdef DEBUG"
+        "#endif"
+        "Scm_VectorSet(vec, i, SCM_MAKE_INT(i));"
+        "}"
+        "#ifdef DEBUG"
+        "#endif"
+        "SCM_RESULT = nStatus;"
+  ))
+
+(define-cproc cs-search
+  (vint::<vector>
+   :optional findfreevar)
+  (body <boolean>
+        "int nStatus = SCM_INT_VALUE(SCM_FALSE);"
+        "int nbVars = SCM_VECTOR_SIZE(vint);"
+        "#ifdef DEBUG"
+        "printf(\"cs-search called.\\n\");"
+        "printf(\"vector nbVars:%d\\n\", nbVars);"
+        "#endif"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "#ifdef DEBUG"
+        "printf(\"before allocation.%d x %d \\n\", sizeof(CSint*), nbVars);"
+        "#endif"
+       "CSint **allvars = SCM_NEW_ARRAY(CSint*, nbVars);"
+        "int i = 0;"
+        "#ifdef DEBUG"
+        "printf(\"after allocation.\\n\");"
+        "#endif"
+        "if (allvars != NULL) {"
+        "for (i = 0; i < nbVars; i++) {"
+        "#ifdef DEBUG"
+        "printf(\"assign to allvars[%d]\\n\", i);"
+        "#endif"
+        "allvars[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, allvars[i]);"
+        "#endif"
+        "}"
+        "/* NOTE: assign procedure or symbol to global variable.*/"
+        "g_findFreeVarProc = SCM_OBJ(findfreevar);"
+        "#ifdef DEBUG"
+        "printf(\"before call cs_search\\n\");"
+        "#endif"
+        "nStatus = cs_search(allvars, nbVars, cs_findFreeVarBridge);"
+        "for (i = 0; i < nbVars; i++) {"
+        "#ifdef DEBUG"
+        "cs_printf(\"after call cs_search allvars[%d] %T\\n\", i, allvars[i]);"
+        "#endif"
+        "Scm_VectorSet(vec, i, CSINT_BOX(allvars[i]));"
+        "}"
+        "} else {"
+        "/* failed to memory allocation.*/"
+        "#ifdef DEBUG"
+        "printf(\"failed to allocate memory.\\n\");"
+        "#endif"
+        "}"
+        "for (i = 0; i < nbVars; i++) {"
+        "cs_printf(\"ref %T\\n\", CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL)));"
+        "}"
+        "SCM_RESULT = nStatus;"
+        ))
+
+
+
+;; __izwindllexport BOOL cs_searchFail(CSint **allvars, int nbVars, CSint*
+;; 			  (*findFreeVar)(CSint **allvars, int nbVars),
+;; 			  int NbFailsMax);
+(define-cproc cs-search-fail
+  (vint::<vector>
+   findfreevar
+   failmax::<int>)
+  (body <boolean>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "int ret = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "/**/"
+        "g_findFreeVarProc = SCM_OBJ(findfreevar);"
+        "ret = cs_searchFail(tint, size, cs_findFreeVarBridge, failmax);"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+
+;; __izwindllexport BOOL cs_searchCriteria(CSint **allvars, int nbVars,
+;; 			      int (*findFreeVar)(CSint **allvars, int nbVars),
+;; 			      int (*criteria)(int index, int val));
+(define-cproc cs-search-criteria
+  (vint::<vector>
+   findfreevar
+   criteria)
+  (body <boolean>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "int nStatus = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "/**/"
+        "g_findFreeVarProc = SCM_OBJ(findfreevar);"
+        "nStatus = cs_searchCriteria(tint, size, cs_findFreeVarIntBridge, cs_criteriaBridge);"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(nStatus);"
+        ))
+;; __izwindllexport BOOL cs_searchCriteriaFail(CSint **allvars, int nbVars,
+;; 				  int (*findFreeVar)(CSint **allvars, int nbVars),
+;; 				  int (*criteria)(int index, int val),
+;; 				  int NbFailsMax);
+(define-cproc cs-search-criteria-fail
+  (vint::<vector>
+   findfreevar
+   criteria
+   failmax::<int>)
+  (body <boolean>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "int ret = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "/**/"
+        "g_findFreeVarProc = SCM_OBJ(findfreevar);"
+        "g_criteriaProc = SCM_OBJ(criteria);"
+        "ret = cs_searchCriteriaFail(tint, size, cs_findFreeVarIntBridge, cs_criteriaBridge, failmax);"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+;; __izwindllexport BOOL cs_searchMatrix(CSint ***matrix, int NbRows, int NbCols,
+;; 			    int (*findFreeRow)(CSint ***matrix, int NbRows, int NbCols),
+;; 			    int (*findFreeCol)(int row, CSint **Row, int NbCols),
+;; 			    int (*criteria)(int row, int col, int val));
+;; __izwindllexport BOOL cs_searchMatrixFail(CSint ***matrix, int NbRows, int NbCols,
+;; 				int (*findFreeRow)(CSint ***matrix, int NbRows, int NbCols),
+;; 				int (*findFreeCol)(int row, CSint **Row, int NbCols),
+;; 				int (*criteria)(int row, int col, int val),
+;; 				int NbFailsMax);
+;; __izwindllexport BOOL cs_Vsearch(int nbVars, CSint *vint, ...);
+
+;; __izwindllexport BOOL cs_findAll(CSint **allvars, int nbVars, CSint* (*findFreeVar)(CSint **allvars, int nbVars),
+;		       void (*found)(CSint **allvars, int nbVars));
+(define-cproc cs-find-all
+  (vint::<vector>
+   findfreevar
+   found)
+  (body <boolean>
+        "#if defined(DEBUG) && defined(DEBUG_FUNC)"
+        "printf(\"FUNC: cs-find-all called.\\n\");"
+        "#endif"
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = SCM_NEW_ARRAY(CSint*, size);"
+        "int ret = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] store address 0x%p\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] address 0x%p\\n\", i, &tint[i]);"
+        "#endif"
+        "}"
+        "/**/"
+        "g_findFreeVarProc = SCM_OBJ(findfreevar);"
+        "g_foundProc = SCM_OBJ(found);"
+        "ret = cs_findAll(tint, size, cs_findFreeVarBridge, cs_foundBridge);"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "#ifdef DEBUG"
+        "int i;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "printf(\"after cs_findAll\\n\");"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] store address 0x%p\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] address 0x%p\\n\", i, &tint[i]);"
+        "}"
+        "#endif"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+;; __izwindllexport BOOL cs_minimize(CSint **allvars, int nbVars, CSint* (*findFreeVar)(CSint **allvars, int nbVars), CSint *cost,
+;;			void (*found)(CSint **allvars, int nbVars, CSint *cost));
+(define-cproc cs-minimize
+  (vint::<vector>
+   findfreevar
+   cost
+   found)
+  (body <boolean>
+        "#if defined(DEBUG) && defined(DEBUG_FUNC)"
+        "printf(\"FUNC: cs-minimize called.\\n\");"
+        "#endif"
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = SCM_NEW_ARRAY(CSint*, size);"
+        "int ret = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] store address 0x%p\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] address 0x%p\\n\", i, &tint[i]);"
+        "#endif"
+        "}"
+        "/**/"
+        "g_findFreeVarProc = SCM_OBJ(findfreevar);"
+        "g_foundProc = SCM_OBJ(found);"
+        "ret = cs_minimize(tint, size, cs_findFreeVarBridge, CSINT_UNBOX(cost), cs_foundWithCostBridge);"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "#ifdef DEBUG"
+        "int i;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "printf(\"after cs_minimize\\n\");"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] store address 0x%p\\n\", i, tint[i]);"
+        "printf(\"CSint pointer tint[%d] address 0x%p\\n\", i, &tint[i]);"
+        "}"
+        "#endif"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+
+;;
+;;
+;; Demon */
+;;
+
+;; __izwindllexport BOOL cs_eventAllKnown(CSint **tint, int size,
+;;			     char (*allKnown)(CSint **tint, int size, void *extra),
+;;			     void *extra);
+
+"
+static char cs_eventAllKnownBridge(CSint **tint, int size, void *extra)
+{
+   ScmObj proc = SCM_OBJ(extra);
+   ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+   ScmVector *vec = SCM_VECTOR(obj);
+   int i = 0;
+   for (i = 0; i < size; i++) {
+          Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+   }
+   ScmObj r = Scm_ApplyRec(proc, SCM_OBJ(vec));
+   return TRUE;
+}
+"
+
+;; __izwindllexport BOOL cs_eventAllKnown(CSint **tint, int size,
+;;			     char (*allKnown)(CSint **tint, int size, void *extra),
+;;			     void *extra);
+
+(define-cproc cs-event-all-known
+  (vint::<vector>
+   allknown)
+  (body <boolean>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*) * size, 0);"
+        "int ret = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "SCM_RESULT = cs_eventAllKnown(tint, size, cs_eventAllKnownBridge, allknown);"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+
+;; __izwindllexport BOOL cs_eventKnown(CSint **tint, int size,
+;;			  char (*known)(int val, int index, CSint **tint, int size, void *extra),
+;;			  void *extra);
+"
+static char cs_eventKnownBridge(int val, int index, CSint **tint, int size, void *extra)
+{
+   ScmObj proc = SCM_OBJ(extra);
+   ScmObj sval = Scm_MakeInteger(val);
+   ScmObj sindex = Scm_MakeInteger(index);
+   ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+   ScmVector *vec = SCM_VECTOR(obj);
+   int i = 0;
+   for (i = 0; i < size; i++) {
+          Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+   }
+   ScmObj r = SCM_UNBOUND;
+   if (SCM_PROCEDUREP(proc) == TRUE) {
+      r = Scm_ApplyRec(proc, SCM_LIST3(sval, sindex, SCM_OBJ(vec)));
+   }
+   if (SCM_EQ(r, SCM_TRUE)) {
+#ifdef DEBUG
+       printf(\"event known procedure return #t\\n\");
+#endif
+     return TRUE;
+   } else {
+#ifdef DEBUG
+       if (SCM_EQ(r, SCM_FALSE)) {
+          printf(\"event known procedure r is #f\\n\");
+       }
+       printf(\"event known procedure return #f\\n\");
+#endif
+      return FALSE;
+   }
+}
+"
+
+(define-cproc cs-event-known
+  (vint::<vector>
+   known)
+  (body <boolean>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "#if defined(DEBUG) && defined(DEBUG_FUNC)"
+        "printf(\"cs-event-known called.\\n\");"
+        "#endif"
+        "#if defined(DEBUG)"
+        "printf(\"vector size:%d\\n\", size);"
+        "#endif"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = SCM_NEW_ARRAY(CSint*, size);"
+        "int ret = SCM_INT_VALUE(SCM_FALSE);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "ret = cs_eventKnown(tint, size, cs_eventKnownBridge, known);"
+        "} else {"
+        "Scm_Error(\"memory allocation error for <csint>.\");"
+        "}"
+        "SCM_RESULT = SCM_INT_VALUE(ret);"
+        ))
+
+
+;;
+;; in scheme, (define (callback
+;;
+"
+static char cs_eventNewMinBridge(CSint *vint, int index, int oldMin, CSint **tint, int size, void *extra)
+{
+   ScmObj proc = SCM_OBJ(extra);
+   return TRUE;
+}
+static char cs_eventNewMaxBridge(CSint *vint, int index, int oldMax, CSint **tint, int size, void *extra)
+{
+   ScmObj proc = SCM_OBJ(extra);
+   return TRUE;
+}
+static char cs_eventNeqBridge(CSint *vint, int index, int neqValue, CSint **tint, int size, void *extra)
+{
+   ScmObj proc = SCM_OBJ(extra);
+   return TRUE;
+}
+"
+
+;; __izwindllexport void cs_eventNewMin(CSint **tint, int size,
+;; 			   char (*newMin)(CSint *vint, int index, int oldMin, CSint **tint, int size, void *extra),
+;; 			   void *extra);
+(define-cproc cs-event-new-min
+  (vint::<vector>
+   newmin)
+  (body <void>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "cs_eventNewMin(tint, size, cs_eventNewMinBridge, newmin);"
+        "} else {"
+        "printf(\"failed to allocate memory.\\n\");"
+        "}"
+        ))
+;; __izwindllexport void cs_eventNewMax(CSint **tint, int size,
+;; 			   char (*newMax)(CSint *vint, int index, int oldMax, CSint **tint, int size, void *extra),
+;; 			   void *extra);
+(define-cproc cs-event-new-max
+  (vint::<vector>
+   newmax)
+  (body <void>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "if (tint != NULL) {"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "cs_eventNewMax(tint, size, cs_eventNewMaxBridge, newmax);"
+        "} else {"
+        ""
+        "}"
+        ))
+;; __izwindllexport void cs_eventNeq(CSint **tint, int size,
+;; 			char (*neq)(CSint *vint, int index, int neqValue, CSint **tint, int size, void *extra), 
+;; 			void *extra);
+(define-cproc cs-event-neq
+  (vint::<vector>
+   neq)
+  (body <void>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "cs_eventNeq(tint, size, cs_eventNeqBridge, neq);"
+        ))
+;; Context */
+
+"
+static void cs_backtrackBridge(CSint *vint, int index)
+{
+   ScmObj proc = SCM_OBJ(g_backtrackProc);
+#ifdef DEBUG
+   printf(\"call cs_backtrackBridge\\n\");
+#endif
+   return;
+}
+"
+;; __izwindllexport void cs_backtrack(CSint *vint, int index, void (*backtrack)(CSint *vint, int index));
+(define-cproc cs-backtrack
+  (vint::<csint>
+   index::<int>
+   backtrack)
+  (body <void>
+        "int size = SCM_VECTOR_SIZE(vint);"
+        "printf(\"vector size:%d\\n\", size);"
+        "ScmVector *vec = SCM_VECTOR(vint);"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "int i = 0;"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "#ifdef DEBUG"
+        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
+        "#endif"
+        "}"
+        "g_backtrackProc = SCM_OBJ(backtrack);"
+        "cs_backtrack(vint, index, cs_backtrackBridge);"
+        ))
+
+(define-cproc cs-save-context ()
+  (body "cs_saveContext();"))
+
+(define-cproc cs-forget-save-context ()
+  (body "cs_forgetSaveContext();"))
+
+(define-cproc cs-restore-and-save-context ()
+  (body "cs_restoreAndSaveContext();"))
+
+(define-cproc cs-accept-context ()
+  (body "cs_acceptContext();"))
+
+(define-cproc cs-accept-all ()
+  (body "cs_acceptAll();"))
+
+(define-cproc cs-restore-context ()
+  (body "cs_restoreContext();"))
+
+(define-cproc cs-restore-all ()
+  (body "cs_restoreAll();"))
+
+;;
+;; you must call this procedure first.
+;;
+(define-cproc cs-init ()
+  (body "cs_init();"))
+
+;;
+;; you must call this procedure at the end.
+;;
+(define-cproc cs-end ()
+  (body "cs_end();"))
+
+(define-cproc cs-forget-save-context-until (label::<int>)
+  (body "cs_forgetSaveContextUntil(label);"))
+
+(define-cproc cs-accept-context-until (label::<int>)
+  (body "cs_acceptContextUntil(label);"))
+
+(define-cproc cs-restore-context-until (label::<int>)
+  (body "cs_restoreContextUntil(label);"))
+
+(define-cproc cs-init-err ()
+  (body "cs_initErr();"))
+
+(define-cproc cs-get-err () ::<int>
+  (expr "cs_getErr()"))
+
+(define-cproc test-izc () ::<const-cstring>
+  (result "test_izc"))
+
+
+;; Local variables:
+;; mode: scheme
+;; end:
