@@ -66,6 +66,8 @@ function cb_clean ()
     rm -f *.def
     rm -f Makefile
     rm -f *.gpd
+    rm -f test/*.dll
+    rm -f *~
 }
 
 function cb_test ()
@@ -81,10 +83,12 @@ function cb_test ()
 
 function cb_libtest ()
 {
-LANG=C g++ -o test/iz_gtest.exe test/iz_gtest.cpp -I. -L. -liz -lgtest
-./test/iz_gtest.exe
-LANG=C g++ -g -o test/nqueen.exe test/nqueen.cpp -I. -L. -liz 
-#./test/nqueen.exe
+    for f in test/test_*.c; do
+        echo $f
+        obj=${f%%.c}".dll"
+        echo $obj
+        gcc -shared -g -o $obj $f -I. -I./test `pkg-config --cflags cutter` `pkg-config --libs cutter` -L. -liz
+	done
 }
 
 while [ $# -gt 0 ]; do
