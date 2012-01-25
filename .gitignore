@@ -1,2 +1,10 @@
 iz.h
 iz.dll
+izc.dll
+test/*.dll
+*.gpd
+*.log
+*.o
+*~
+*_head.c
+*_tail.c
