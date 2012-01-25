@@ -83,7 +83,8 @@ function cb_test ()
 
 function cb_libtest ()
 {
-    for f in test/test_*.c; do
+    
+    for f in $CB_LIBTESTSRC; do
         echo $f
         obj=${f%%.c}".dll"
         echo $obj
@@ -115,6 +116,13 @@ while [ $# -gt 0 ]; do
         -lt|libtest)
             shift
             CB_LIBTEST=1
+            if [ ! -z "$1" ]; then
+                if [ -f "$1" ]; then
+                    CB_LIBTESTSRC=$1
+                else
+                    CB_LIBTESTSRC=test/test_*.c
+                fi
+            fi
             ;;
         -c|clean)
             shift
