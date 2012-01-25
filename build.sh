@@ -88,7 +88,7 @@ function cb_libtest ()
         echo $f
         obj=${f%%.c}".dll"
         echo $obj
-        gcc -shared -g -o $obj $f -I. -I./test `pkg-config --cflags cutter` `pkg-config --libs cutter` -L. -liz
+        gcc -std=c99 -shared -g -o $obj $f -I. -I./test `pkg-config --cflags cutter` `pkg-config --libs cutter` -L. -liz
 	done
 }
 
