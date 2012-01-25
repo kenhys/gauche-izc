@@ -1,3 +1,5 @@
+/* -*- coding: utf-8-unix -*- */
+
 #include <stdio.h>
 #include <limits.h>
 #include <cutter.h>
