@@ -51,14 +51,18 @@ AC_SUBST(GAUCHE_PKGINCDIR)
 AC_SUBST(GAUCHE_PKGLIBDIR)
 AC_SUBST(GAUCHE_PKGARCHDIR)
 
+
 dnl Check for headers.
 dnl Add your macro calls to check required headers, if you have any.
+dnl AC_CHECK_HEADERS(iz.h)
 
 dnl Check for other programs.
 dnl Add your macro calls to check existence of programs, if you have any.
 
 dnl Check for libraries
 dnl Add your macro calls to check required libraries, if you have any.
+
+m4_include([iz.m4])
 
 dnl Creating gpd (gauche package description) file
 GAUCHE_PACKAGE_CONFIGURE_ARGS="`echo ""$ac_configure_args"" | sed 's/[\\""\`\$]/\\\&/g'`"
