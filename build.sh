@@ -116,9 +116,11 @@ while [ $# -gt 0 ]; do
         -lt|libtest)
             shift
             CB_LIBTEST=1
+ 
             if [ ! -z "$1" ]; then
                 if [ -f "$1" ]; then
                     CB_LIBTESTSRC=$1
+                    shift
                 else
                     CB_LIBTESTSRC=test/test_*.c
                 fi
