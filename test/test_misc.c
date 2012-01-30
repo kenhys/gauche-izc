@@ -4,6 +4,39 @@
 
 #include "iz.h"
 
+
+CUT_EXPORT void cut_startup(void)
+{
+#if DEBUG
+    g_print("cut_startup\n");
+#endif
+    cut_message("cut_startup");
+}
+CUT_EXPORT void cut_shutdown(void)
+{
+#if DEBUG
+    g_print("cut_shutdown\n");
+#endif
+    cut_message("cut_shutdown");
+}
+
+CUT_EXPORT void cut_setup(void)
+{
+#if DEBUG
+    g_print("cut_setup\n");
+#endif
+    cut_message("cut_setup");
+    cs_init();
+}
+CUT_EXPORT void cut_teardown(void)
+{
+#if DEBUG
+    g_print("cut_teardown\n");
+#endif
+    cut_message("cut_teardown");
+    cs_end();
+}
+
 CUT_EXPORT void test_init(void)
 {
     cs_init();
@@ -27,6 +60,20 @@ CUT_EXPORT void test_cs_getErr_no_init(void)
     cut_assert_equal_int(CS_ERR_NONE, cs_getErr());
 }
 
+CUT_EXPORT void test_cs_getNbElemnts(void)
+{
+    CSint *vint = NULL;
+#if 0
+    /* invalid */
+    cut_assert_equal_int(0, cs_getNbElements(vint)); 
+#endif
+
+    vint = CSINT(0);
+    cut_assert_equal_int(1, cs_getNbElements(vint));
+
+    vint = cs_createCSint(-100, 100);
+    cut_assert_equal_int(201, cs_getNbElements(vint));
+}
 
 /**/
 
