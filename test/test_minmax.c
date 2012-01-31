@@ -83,6 +83,10 @@ CUT_EXPORT void test_cs_getMax(void)
     /* overflow */
     vint = CSINT(INT_MAX+1);
     cut_assert_equal_int(INT_MIN, cs_getMax(vint));
+
+    /**/
+    vint = cs_createCSint(0, 10);
+    
 }
 
 

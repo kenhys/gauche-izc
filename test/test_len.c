@@ -39,18 +39,30 @@ CUT_EXPORT void cut_teardown(void)
 
 CUT_EXPORT void test_cs_Eq(void)
 {
+    cut_assert_true(cs_Eq(CSINT(0), CSINT(0)));
+    cut_assert_true(cs_Eq(CSINT(INT_MIN), CSINT(INT_MIN)));
+    cut_assert_true(cs_Eq(CSINT(INT_MAX), CSINT(INT_MAX)));
 }
 
 CUT_EXPORT void test_cs_EQ(void)
 {
+    cut_assert_true(cs_EQ(CSINT(0), 0));
+    cut_assert_true(cs_EQ(CSINT(INT_MIN), INT_MIN));
+    cut_assert_true(cs_EQ(CSINT(INT_MAX), INT_MAX));
 }
 
 CUT_EXPORT void test_cs_Neq(void)
 {
+    cut_assert_true(cs_Neq(CSINT(0), CSINT(INT_MAX)));
+    cut_assert_true(cs_Neq(CSINT(INT_MIN), CSINT(INT_MAX)));
+    cut_assert_true(cs_Neq(CSINT(INT_MAX), CSINT(INT_MIN)));
 }
 
 CUT_EXPORT void test_cs_NEQ(void)
 {
+    cut_assert_true(cs_NEQ(CSINT(0), INT_MAX));
+    cut_assert_true(cs_NEQ(CSINT(INT_MIN), INT_MAX));
+    cut_assert_true(cs_NEQ(CSINT(INT_MAX), INT_MIN));
 }
 
 CUT_EXPORT void test_cs_Le(void)
@@ -72,6 +84,10 @@ CUT_EXPORT void test_cs_Le(void)
 
 CUT_EXPORT void test_cs_LE(void)
 {
+    cut_assert_true(cs_LE(CSINT(0), 0));
+    cut_assert_true(cs_LE(CSINT(INT_MIN), INT_MIN));
+    cut_assert_true(cs_LE(CSINT(INT_MAX), INT_MAX));
+    cut_assert_true(cs_LE(CSINT(INT_MIN), INT_MAX));
 }
 
 CUT_EXPORT void test_cs_Ge(void)
@@ -91,6 +107,10 @@ CUT_EXPORT void test_cs_Ge(void)
 
 CUT_EXPORT void test_cs_GE(void)
 {
+    cut_assert_true(cs_GE(CSINT(0), 0));
+    cut_assert_true(cs_GE(CSINT(INT_MIN), INT_MIN));
+    cut_assert_true(cs_GE(CSINT(INT_MAX), INT_MAX));
+    cut_assert_true(cs_GE(CSINT(INT_MAX), INT_MIN));
 }
 
 CUT_EXPORT void test_cs_Lt(void)

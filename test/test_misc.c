@@ -284,7 +284,6 @@ CUT_EXPORT void test_cs_createCSintArray(void)
 
 CUT_EXPORT void test_cs_getName(void)
 {
-    cs_init();
     CSint *vint = CSINT(1);
 
     char *name = cs_getName(vint);
@@ -293,5 +292,50 @@ CUT_EXPORT void test_cs_getName(void)
     cs_setName(vint, "dummy");
     name = cs_getName(vint);
     cut_assert_equal_string("dummy", name);
+}
+
+CUT_EXPORT void test_cs_getValue(void)
+{
+    CSint *vint = NULL;
+
+    cut_assert_equal_int(0, cs_getValue(CSINT(0)));
+    cut_assert_equal_int(INT_MIN, cs_getValue(CSINT(INT_MIN)));
+    cut_assert_equal_int(INT_MAX, cs_getValue(CSINT(INT_MAX)));
+
+    /* error */
+    cut_assert_equal_int(0, cs_getValue(cs_createCSint(0, 10)));
+    cut_assert_equal_int(CS_ERR_GETVALUE, cs_getErr());
+
+    cut_assert_equal_int(INT_MIN, cs_getValue(cs_createCSint(INT_MIN, INT_MAX)));
+    cut_assert_equal_int(CS_ERR_GETVALUE, cs_getErr());
+}
+
+CUT_EXPORT void test_cs_isFree(void)
+{
+    CSint *vint = NULL;
+    CSint *vint2 = NULL;
+
+    cut_assert_true(cs_isFree(cs_createCSint(0, 10)));
+
+    vint = cs_createCSint(INT_MIN, INT_MAX);
+    cut_assert_equal_int(INT_MIN, cs_getMin(vint));
+    cut_assert_equal_int(INT_MAX, cs_getMax(vint));
+    /* may be iz-c bug? expect true, but false */
+    cut_assert_true(cs_isFree(vint), "may be iz-c bug?");
+
+    cut_assert_false(cs_isFree(CSINT(0)));
+    cut_assert_false(cs_isFree(CSINT(INT_MIN)));
+    cut_assert_false(cs_isFree(CSINT(INT_MAX)));
+
+}
+
+CUT_EXPORT void test_cs_isInstantiated(void)
+{
+    cut_assert_true(cs_isInstantiated(CSINT(0)));
+    cut_assert_true(cs_isInstantiated(CSINT(INT_MIN)));
+    cut_assert_true(cs_isInstantiated(CSINT(INT_MAX)));
+
+    cut_assert_false(cs_isInstantiated(cs_createCSint(0, 10)));
+    cut_assert_false(cs_isInstantiated(cs_createCSint(INT_MIN, INT_MAX)));
 }
 
