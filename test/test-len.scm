@@ -87,22 +87,36 @@
 (test* "{1..10} <= 10" #t (cs-le (mkcsint) 10))
 (test* "{1..10} <= 11" #t (cs-le (mkcsint) 11))
 
-(define mkcsint (lambda () (cs-create-csint 1 10)))
 
 ;;;
 ;;; cs-le-csint
 ;;;
 (test-section "cs-le-csint")
 
-(test* "{1..10} <= {11..20}" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 11 20)))
-(test* "{1..10} <= {1..10}" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 1 10)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 1 20)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 2 11)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 10 20)))
+(define (mktest expect min max op min2 max2)
+  (test* (format #f "{~D..~D} ~a {~D..~D}" min max op min2 max2)
+         expect (cs-le-csint (cs-create-csint min max) (cs-create-csint min2 max2))))
 
-(test* "-1 <= -1" #t (cs-le-csint (csint -1) (csint -1)))
-(test* "0 <= 0" #t (cs-le-csint (csint 0) (csint 0)))
-(test* "1 <= 1" #t (cs-le-csint (csint 1) (csint 1)))
+(mktest #t -1 -1 "<=" -1 -1)
+(mktest #t 0 0 "<=" 0 0)
+(mktest #t 1 1 "<=" 1 1)
+(mktest #t CS_INT_MIN CS_INT_MIN "<=" CS_INT_MIN CS_INT_MIN)
+(mktest #t CS_INT_MAX CS_INT_MAX "<=" CS_INT_MAX CS_INT_MAX)
+
+(mktest #t CS_INT_MIN CS_INT_MIN "<=" CS_INT_MAX CS_INT_MAX)
+(mktest #t CS_INT_MIN CS_INT_MAX "<=" CS_INT_MIN CS_INT_MAX)
+
+(mktest #t 1 10 "<=" 1 10)
+(mktest #t 1 10 "<=" 1 CS_INT_MAX)
+(mktest #t 1 10 "<=" 11 CS_INT_MAX)
+(mktest #t 1 10 "<=" 0 10)
+(mktest #t 1 10 "<=" 0 9)
+(mktest #t 1 10 "<=" -10 1)
+
+(mktest #f 1 10 "<=" -10 0)
+(mktest #f 1 10 "<=" CS_INT_MIN 0)
+
+(mktest #t CS_INT_MIN 0 "<=" 0 CS_INT_MAX)
 
 (test* "-2 <= -1" #t (cs-le-csint (csint -2) (csint -1)))
 (test* "-1 <= 0" #t (cs-le-csint (csint -1) (csint 0)))

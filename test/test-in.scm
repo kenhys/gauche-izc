@@ -68,39 +68,6 @@
 (test* "return 1 true" #t (return-1))
 (test* "return 0 false" #f (return-0))
 
-(test-section "cs-ge")
-(test-section "cs-lt")
-(test-section "cs-gt")
-(test-section "cs-eq")
-
-(test-section "cs-neq")
-
-(define var1 (cs-create-csint 1 10))
-(test* "{1..10} <> 0" #t (cs-neq  var1 0))
-(test* "min" 1 (cs-get-min var1))
-(test* "max" 10 (cs-get-max  var1))
-
-(define var1 (cs-create-csint 1 10))
-(test* "{1..10} <> 1" #t (cs-neq var1 1))
-(test* "min" 2 (cs-get-min var1))
-(test* "max" 10 (cs-get-max  var1))
-
-(define var1 (cs-create-csint 1 10))
-(test* "{1..10} <> 10" #t (cs-neq var1 10))
-(test* "min" 1 (cs-get-min var1))
-(test* "max" 9 (cs-get-max  var1))
-
-(define var1 (cs-create-csint 1 10))
-(test* "{1..10} <> 11" #t (cs-neq var1 11))
-(test* "min" 1 (cs-get-min var1))
-(test* "max" 10 (cs-get-max  var1))
-
-(define var1 (cs-create-csint 1 1))
-(test* "{1} -> not 1 constrains failed." #f (cs-neq var1 1))
-(test* "error?" 0 (cs-get-err))
-(test* "min" 1 (cs-get-min var1))
-(test* "max" 1 (cs-get-max  var1))
-
 (define vec (make-vector 10))
 
 (define (init-proc index vint)

@@ -4,6 +4,8 @@
 
 (use gauche.test)
 (use gauche.interactive)
+(use gauche.collection)
+(use gauche.sequence)
 (use izc)
 
 (test-record-file "test.record")
@@ -33,6 +35,15 @@
 (define O (~ vint 5))
 (define R (~ vint 6))
 (define Y (~ vint 7))
+
+(cs-set-name S "S")
+(cs-set-name E "E")
+(cs-set-name N "N")
+(cs-set-name D "D")
+(cs-set-name M "M")
+(cs-set-name O "O")
+(cs-set-name R "R")
+(cs-set-name Y "Y")
 
 (define val (list->vector '(1000 100 10 1)))
 (define val2 (list->vector '(10000 1000 100 10 1)))
@@ -66,27 +77,21 @@
 
 (cs-search vint)
 
-(define (mktest val index ans)
-  (test* "" (~ ans index) (cs-get-value (~ val index))))
+(define (mktest allvars ans)
+  (map-with-index (^ (index vint)
+                     (test* (cs-get-name vint)
+                            (~ ans index) (cs-get-value vint))) allvars))
 
-(define send-ans '(9 5 6 7))
-(mktest send 0 send-ans)
-(mktest send 1 send-ans)
-(mktest send 2 send-ans)
-(mktest send 3 send-ans)
+;;
+;;   9 5 6 7
+;; + 1 0 8 5
+;; ---------
+;; 1 0 6 5 2
 
-(define more-ans '(1 0 8 5))
-(mktest more 0 more-ans)
-(mktest more 1 more-ans)
-(mktest more 2 more-ans)
-(mktest more 3 more-ans)
-;;(9,5,6,7,1,0,8,2};
-(define money-ans '(1 0 6 5 2))
-(mktest money 0 money-ans)
-(mktest money 1 money-ans)
-(mktest money 2 money-ans)
-(mktest money 3 money-ans)
-(mktest money 4 money-ans)
+(mktest send '(9 5 6 7))
+(mktest more '(1 0 8 5))
+(mktest money '(1 0 6 5 2))
+
 (cs-end)
 
 ;; epilogue
