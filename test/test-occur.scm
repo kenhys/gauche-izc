@@ -5,7 +5,10 @@
 (use gauche.test)
 (use gauche.interactive)
 (use izc)
-(test-start "izc")
+
+(test-record-file "test.record")
+
+(test-start "occur")
 (test-module 'izc)
 
 ;; The following is a dummy test code.

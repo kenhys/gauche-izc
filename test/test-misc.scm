@@ -5,7 +5,11 @@
 (use gauche.test)
 (use gauche.interactive)
 (use izc)
-(test-start "izc")
+
+
+(test-record-file "test.record")
+
+(test-start "misc")
 (test-module 'izc)
 
 ;; The following is a dummy test code.
@@ -37,12 +41,6 @@
 (test* "cs-get-name" "tmp" (cs-get-name (cs-create-named-csint 0 2 "tmp")))
 ;;(test* "domain" 5 (cs-get-max (cs-create-csint-from-domain (list 1 4 5 2 3))))
 (test* "domain" 5 (cs-get-max (cs-create-csint-from-domain (list 1 2 3 4 5))))
-
-(test* "cs-get-next-value" 2 (cs-get-next-value (cs-create-csint 0 10) 1))
-(test* "cs-get-next-value" 2147483647 (cs-get-next-value (cs-create-csint 0 10) 11))
-
-(test* "cs-get-previous-value" 0 (cs-get-previous-value (cs-create-csint 0 10) 1))
-(test* "cs-get-previous-value" -2147483648 (cs-get-previous-value (cs-create-csint 0 10) -1))
 
 (test* "cs-in-array" #t (cs-in-array (cs-create-csint 1 3) (list 1 2)))
 

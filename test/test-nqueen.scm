@@ -12,7 +12,9 @@
 (use izc)
 (use srfi-1)
 
-(test-start "izc")
+(test-record-file "test.record")
+
+(test-start "nqueen")
 (test-module 'izc)
 
 (define (known-queen val index allvars)
@@ -88,7 +90,6 @@
 (cs-search allvars 'elements-min)
 (test* "cs-search 'elements-min" '(1 7 2 6 3 8 4 5) (map cs-get-value allvars))
 
-(exit)
 (test-section "cs-find-all")
 ;; we decide to solve 8 queen problem!
 (define allvars (cs-create-csint-array nqueens 1 8))

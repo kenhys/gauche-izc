@@ -7,7 +7,11 @@
 (use gauche.sequence)
 (use gauche.collection)
 (use izc)
-(test-start "izc")
+
+(test-record-file "test.record")
+
+(test-start "in")
+
 (test-module 'izc)
 
 ;; The following is a dummy test code.
@@ -15,7 +19,9 @@
 
 (cs-init)
 
-
+;;;
+;;; cs-in-array
+;;;
 (test-section "cs-in-array")
 ;; cs-in-array does not require csint must contain all listed value.
 (test* "1..3 contain 0?" #f (cs-in-array (cs-create-csint 1 3) (list 0)))
@@ -27,11 +33,17 @@
 (test* "partially contain?" #t (cs-in-array (cs-create-csint 1 1) (list 0 1 2)))
 
 
+;;;
+;;; cs-not-in-array
+;;;
 (test-section "cs-not-in-array")
 (test* "cs-in-array" #f (cs-in-array (cs-create-csint 1 3) (list 0)))
 (test* "cs-not-in-array" #t (cs-not-in-array (cs-create-csint 1 3) (list 0)))
 (test* "cs-not-in-array" #t (cs-not-in-array (cs-create-csint 1 3) (list 3 0)))
 
+;;;
+;;; cs-in-interval
+;;;
 (test-section "cs-in-interval")
 (test* "cs-not-in-array" #t (cs-in-interval (cs-create-csint 1 10) 2 9))
 (test* "cs-not-in-array" 2 (let* ((csint (cs-create-csint 1 10))
@@ -48,61 +60,9 @@
 (test-section "cs-not-in-interval")
 ;; cs-create-csint-array
 
-(test-section "cs-le-csint")
-(test* "none overwraped csint" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 11 20)))
-(test* "{1..10} <= {11..20}" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 1 10)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 1 20)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 2 11)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 10 20)))
-
-(test* "-1 <= -1" #t (cs-le-csint (cs-create-csint -1 -1) (cs-create-csint -1 -1)))
-(test* "0 <= 0" #t (cs-le-csint (cs-create-csint 0 0) (cs-create-csint 0 0)))
-(test* "1 <= 1" #t (cs-le-csint (cs-create-csint 1 1) (cs-create-csint 1 1)))
-
-(test* "-2 <= -1" #t (cs-le-csint (cs-create-csint -2 -2) (cs-create-csint -1 -1)))
-(test* "-1 <= 0" #t (cs-le-csint (cs-create-csint -1 -1) (cs-create-csint 0 0)))
-(test* " 0 <= 1" #t (cs-le-csint (cs-create-csint 0 0) (cs-create-csint 1 1)))
-(test* " 1 <= 2" #t (cs-le-csint (cs-create-csint 1 1) (cs-create-csint 2 2)))
-(test* "-2 <= 1" #t (cs-le-csint (cs-create-csint -2 -2) (cs-create-csint 1 1)))
-(test* "-1 <= 2" #t (cs-le-csint (cs-create-csint -1 -1) (cs-create-csint 2 2)))
-
-(test* "1 <= 0" #f (cs-le-csint (csint 1) (csint 0)))
-(test* "1 <= 0" #f (cs-le-csint (cs-create-csint 1 1) (cs-create-csint 0 0)))
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 10 10)))
-
-(test* "same range" #t (cs-le-csint (cs-create-csint 1 10) (cs-create-csint 10 20)))
-(test-section "cs-ge-csint")
-(test-section "cs-lt-csint")
-(test-section "cs-gt-csint")
-(test-section "cs-eq-csint")
-
-
 ;;;
 ;;;
 ;;;
-(test-section "cs-neq-csint")
-
-(test* "{0} != {0}" #f (cs-neq-csint (csint 0) (csint 0)))
-(test* "{0} != {1}" #t (cs-neq-csint (csint 0) (csint 1)))
-(test* "{1..10} != {11..20}" #t (cs-neq-csint (cs-create-csint 1 10) (cs-create-csint 11 20)))
-(test* "{1..10} != {10..20}" #t (cs-neq-csint (cs-create-csint 1 10) (cs-create-csint 10 20)))
-(test* "{1..10} != {1..10}" #t (cs-neq-csint (cs-create-csint 1 10) (cs-create-csint 1 10)))
-
-
-(test* "{1..10} != {11..20}" #t (cs-neq-csint (cs-create-csint 1 10) (cs-create-csint 11 20)))
-(test* "{1..10} <= 1" #t (cs-le (cs-create-csint 1 10) 1))
-(test* "{1..10} <= 10" #t (cs-le (cs-create-csint 1 10) 10))
-(test* "{1..10} <= 11" #t (cs-le (cs-create-csint 1 10) 11))
-
-
-
-(test-section "cs-le")
-
-(test* "{1..10} <= 0" #f (cs-le (cs-create-csint 1 10) 0))
-(test* "{1..10} <= 1" #t (cs-le (cs-create-csint 1 10) 1))
-(test* "{1..10} <= 10" #t (cs-le (cs-create-csint 1 10) 10))
-(test* "{1..10} <= 11" #t (cs-le (cs-create-csint 1 10) 11))
-
 (test* "return true" #t (return-true))
 (test* "return false" #f (return-false))
 (test* "return 1 true" #t (return-1))

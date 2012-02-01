@@ -96,7 +96,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         -g|debug)
             shift
-            CFLAGS="$CFLAGS -DHAVE_BOOL -DDEBUG"
+            CFLAGS="$CFLAGS -DHAVE_BOOL -DDEBUG -ggdb"
             ;;
         -gf|debugfunc)
             shift
