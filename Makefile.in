@@ -47,7 +47,7 @@ izc_SRCS = $(srcdir)/izc.c $(srcdir)/izclib.stub
 
 all : $(TARGET)
 
-izc.$(SOEXT): $(izc_SRCS)
+izc.$(SOEXT): $(izc_SRCS) izclib-bridge.c
 	$(GAUCHE_PACKAGE) compile \
 	  --local=$(LOCAL_PATHS) --cflags=$(IZ_CPPFLAGS) --libs=-liz --verbose izc $(izc_SRCS)
 
