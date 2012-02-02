@@ -19,7 +19,38 @@
 
 (test* "test-izc" 0 (cs-get-err))
 
-(cs-info (cs-create-csint 0 0))
+(test-section "cs-create-csint")
+(test-section "cs-create-named-csint")
+(test-section "cs-csint")
+(test-section "cs-create-csint-from-domain")
+(test-section "cs-create-csint-array")
+
+(test-section "cs-set-name")
+(test-section "cs-get-name")
+(test-section "cs-get-value")
+(test-section "cs-get-next-value")
+(test-section "cs-is-free")
+(test-section "cs-is-instantiated")
+(test-section "cs-get-nb-elements")
+(test-section "cs-get-nb-constraints")
+
+
+;;;
+;;; cs-get-domain
+;;;
+(test-section "cs-get-domain")
+
+(define (mktest expect min max)
+  (test* (format #f "domain {~D..~D}" min max)
+         expect (cs-get-domain (cs-create-csint min max))))
+
+(mktest '(0) 0 0)
+(mktest '(-1 0 1) -1 1)
+(mktest '(-1 0 1) 0 CS_INT_MAX)
+(cs-info (cs-create-csint CS_INT_MIN CS_INT_MAX))
+
+(mktest '(-1 0 1) CS_INT_MIN CS_INT_MAX)
+
 ;;(test* "CS_ERR_NONE" CS_ERR_NONE (cs-get-err))
 
 ;; (test* "test-izc" 0 (cs-get-min (cs-create-csint 0 1)))
@@ -30,9 +61,6 @@
 ;; (test* "test-izc" 1 (cs-get-max (cs-create-csint -1 1)))
 ;; (test* "cs-get-max" 0 (cs-get-max (cs-create-csint -2 0)))
 
-(test-section "cs-get-domain")
-(test* "domain" (list 0) (cs-get-domain (cs-create-csint 0 0)))
-(test* "domain" (list -2 -1 0) (cs-get-domain (cs-create-csint -2 0)))
 
 ;; SEGV
 ;;(test* "domain" (list 2147483647) (cs-get-domain (cs-create-csint 2147483647 2147483647)))

@@ -6,7 +6,7 @@
 
 void found(CSint **allvars, int nbVars)
 {
-    static NbSolutions = 0;
+    static int NbSolutions = 0;
     printf("Solution %d\n", ++NbSolutions);
     cs_printf("%A\n", allvars, nbVars);
 }

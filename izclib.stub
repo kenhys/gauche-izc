@@ -83,12 +83,10 @@ static int g_errno = 0;
         "Scm_Error(\"array of int required, but got NULL\");"
         "}"))
 
-;;  CSint **cs_createCSintArray(int size, int min, int max);
-;; NOTE: API changed for gauche.
-(define-cproc cs-create-csint-array
-  (size::<int>
-   min::<int>
-   max::<int>)
+;; CSint **cs_createCSintArray(int size, int min, int max);
+;; NOTE: gauche support vector or list as return type of results.
+(define-cproc cs-create-csint-vector
+  (size::<int> min::<int> max::<int>)
   (body <vector>
         "/* create vector */"
         "CSint **vars;"
@@ -103,6 +101,24 @@ static int g_errno = 0;
         "Scm_VectorSet(vec, i, CSINT_BOX(vars[i]));"
         "}"
         "SCM_RESULT = vec;"
+        "}"))
+
+(define-cproc cs-create-csint-list
+  (size::<int> min::<int> max::<int>)
+  (body <list>
+        "/* create vector */"
+        "CSint **vars;"
+        "CSint *csint;"
+        "vars = cs_createCSintArray(size, min, max);"
+        "int i;"
+        "if (vars != NULL) {"
+        "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
+        "ScmObj scm;";
+        "for (i = 0; i < size; i++) {"
+        "cs_printf(\"vars[%d] %T\\n\", i, vars[i]);"
+        "Scm_VectorSet(vec, i, CSINT_BOX(vars[i]));"
+        "}"
+        "SCM_RESULT = Scm_VectorToList(vec, 0, -1);"
         "}"))
 
 ;;  void cs_setName(CSint *vint, char *name);
@@ -160,10 +176,10 @@ static int g_errno = 0;
 ;; so, cs-get-domain mapped to return list of int.
 ;;
 (define-cproc cs-get-domain
-  (vint::<csint>) 
+  (vint::<csint>) ::<list>
   (body <list>
-        "int nSize = cs_getNbElements(vint);"
-        "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(nSize, SCM_NIL));"
+        "int size = cs_getNbElements(vint);"
+        "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
         "int i=0;"
         "int *vals = cs_getDomain(vint);"
         "for (i = 0; i < nSize; i++) {"
@@ -237,11 +253,28 @@ static int g_errno = 0;
    (expr "cs_NotInInterval(vint, min, max)"))
 
 ;;  IZBOOL cs_AllNeq(CSint **tint, int size);
-(define-cproc cs-all-neq
+(define-cproc cs-all-neq-vector
   (vint::<vector>) ::<boolean>
   (body <boolean>
         "int size = SCM_VECTOR_SIZE(vint);"
         "ScmVector* vec = SCM_VECTOR(vint);"
+        "int i;"
+        "CSint **tint = calloc(sizeof(CSint*), size);"
+        "if (tint != NULL) {"
+        "for (i = 0; i < size; i++) {"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "}"
+        "} else {"
+        "printf(\"memory allocation error\");"
+        "}"
+        "SCM_RESULT = cs_AllNeq(tint, size);"
+        ))
+(define-cproc cs-all-neq-list
+  (vint::<list>) ::<boolean>
+  (body <boolean>
+        "ScmObj obj = Scm_ListToVector(vint, 0, -1);"
+        "int size = SCM_VECTOR_SIZE(obj);"
+        "ScmVector* vec = SCM_VECTOR(obj);"
         "int i;"
         "CSint **tint = calloc(sizeof(CSint*), size);"
         "if (tint != NULL) {"
@@ -408,11 +441,29 @@ static int g_errno = 0;
   (expr "cs_Abs(vint1)"))
 ;; minmax */
 ;;  CSint *cs_Min(CSint **tint, int size);
-(define-cproc cs-min
-  (vint::<vector>)
+(define-cproc cs-min-vector
+  (vint::<vector>) ::<csint>
   (body <csint>
         "int size = SCM_VECTOR_SIZE(vint);"
         "ScmVector* vec = SCM_VECTOR(vint);"
+        "int i;"
+        "CSint *vint1,*vint2,*min;"
+        "for (i = 0; i < size-1; i++) {"
+        "vint1 = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_UNBOUND));"
+        "vint2 = CSINT_UNBOX(Scm_VectorRef(vec, i+1, SCM_UNBOUND));"
+        "if (cs_Lt(vint1, vint2)){"
+        "min = vint1;"
+        "} else {"
+        "min = vint2;"
+        "}"
+        "}"
+        "SCM_RESULT = min;"))
+(define-cproc cs-min-list
+  (vint::<list>) ::<csint>
+  (body <csint>
+        "ScmObj obj = Scm_ListToVector(vint, 0, -1);"
+        "int size = SCM_VECTOR_SIZE(obj);"
+        "ScmVector* vec = SCM_VECTOR(obj);"
         "int i;"
         "CSint *vint1,*vint2,*min;"
         "for (i = 0; i < size-1; i++) {"
@@ -502,7 +553,7 @@ static int g_errno = 0;
         "CSint **tint = SCM_NEW_ARRAY(CSint*, size);"
         "if (tint != NULL) {"
         "for (i = 0; i < size; i++) {"
-        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
+        "tint[i] = CSINT_UNBOX(Scm_VectorRef(array, i, SCM_NIL));"
         "}"
         "} else {"
         "Scm_Error(\"failed to allocate CSint*, got NULL.\");"
@@ -512,8 +563,7 @@ static int g_errno = 0;
 ;; index */
 ;;  CSint *cs_Index(CSint **tint, int size, int val);
 (define-cproc cs-index
-  (array::<vector>
-   val::<int>)
+  (array::<vector> val::<int>)
   (body <csint>
         "int size = SCM_VECTOR_SIZE(array);"
         "ScmVector* vec = SCM_VECTOR(array);"
@@ -529,8 +579,7 @@ static int g_errno = 0;
 ;; element */
 ;;  CSint *cs_Element(CSint *index, int *values, int size);
 (define-cproc cs-element
-  (vint::<csint>
-   array::<list>)
+  (vint::<csint> array::<list>)
   (body <csint>
         "int size = Scm_Length(array);"
         "int *values = calloc(sizeof(int), size);"
@@ -1197,6 +1246,19 @@ static void cs_backtrackBridge(CSint *vint, int index)
 
 (define-cproc test-izc () ::<const-cstring>
   (result "test_izc"))
+
+;; ;;
+;; (define-cproc test-izc-array (vint::<vector>) ::<vector>
+;;   (body <vector>
+;;         "int size = 10;"
+;;         "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
+;;         "SCM_RESULT = vec;"))
+
+;; (define-cproc test-izc-array (vint::<list>) ::<list>
+;;   (body <list>
+;;         "int size = 10;"
+;;         "ScmObj *list = SCM_LIST(Scm_MakeList(size, SCM_NIL));"
+;;         "SCM_RESULT = list;"))
 
 
 ;; Local variables:

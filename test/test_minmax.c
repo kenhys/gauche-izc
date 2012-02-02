@@ -90,44 +90,18 @@ CUT_EXPORT void test_cs_getMax(void)
 }
 
 
-CUT_EXPORT void test_cs_getNextValue(void)
+CUT_EXPORT void test_cs_Min(void)
 {
-    cs_init();
-    CSint *vint = NULL;
-
-    /* -10,-9,-8,...,8,9,10 */
-    vint = cs_createCSint(-10, 10);
-    cut_assert_equal_int(-10, cs_getMin(vint));
-    cut_assert_equal_int(10, cs_getMax(vint));
-    for (int i=-10; i <= 10; i++){
-        if (i == 10) {
-            cut_assert_equal_int(INT_MAX, cs_getNextValue(vint, i));
-        } else {
-            cut_assert_equal_int(i+1, cs_getNextValue(vint, i));
-        }
-        
-    }
-    cut_assert_equal_int(INT_MAX, cs_getNextValue(vint, 10));
-    cut_assert_equal_int(-10, cs_getNextValue(vint, INT_MIN));
-    cut_assert_equal_int(INT_MAX, cs_getNextValue(vint, INT_MAX));
 }
 
-CUT_EXPORT void test_cs_getPreviousValue(void)
+CUT_EXPORT void test_cs_VMin(void)
 {
-    cs_init();
-    CSint *vint = NULL;
+}
 
-    vint = cs_createCSint(-10, 10);
-    cut_assert_equal_int(-10, cs_getMin(vint));
-    cut_assert_equal_int(10, cs_getMax(vint));
-    for (int i=-10; i < 10; i++){
-        if (i == -10) {
-            cut_assert_equal_int(INT_MIN, cs_getPreviousValue(vint, i));
-        } else {
-            cut_assert_equal_int(i-1, cs_getPreviousValue(vint, i));
-        }
-    }
-    cut_assert_equal_int(INT_MIN, cs_getPreviousValue(vint, -10));
-    cut_assert_equal_int(INT_MIN, cs_getPreviousValue(vint, INT_MIN));
-    cut_assert_equal_int(10, cs_getPreviousValue(vint, INT_MAX));
+CUT_EXPORT void test_cs_Max(void)
+{
+}
+
+CUT_EXPORT void test_cs_VMax(void)
+{
 }
