@@ -317,7 +317,7 @@ CUT_EXPORT void test_cs_getNbElemnts(void)
     vint = cs_createCSint(1, INT_MAX);
     cut_assert_equal_int(INT_MAX, cs_getNbElements(vint));
 
-    vint = cs_createCSint(-1, INT_MIN+1);
+    vint = cs_createCSint(INT_MIN+1, -1);
     cut_assert_equal_int(INT_MAX, cs_getNbElements(vint));
 
     /* overflow */
@@ -341,7 +341,6 @@ CUT_EXPORT void test_cs_getDomain(void)
     int *data = NULL;
     int size = 0;
     
-    return;
     vint = cs_createCSint(0, 0);
     data = cs_getDomain(vint);
     size = cs_getNbElements(vint);
@@ -349,14 +348,23 @@ CUT_EXPORT void test_cs_getDomain(void)
     cut_assert_equal_int(0, data[0]);
     free(data);
     
-    return;
+#if 0
     vint = cs_createCSint(INT_MAX, INT_MAX);
-    data = cs_getDomain(vint);
+    cut_assert_not_null(vint);
     cut_assert_equal_int(1, cs_getNbElements(vint));
+    /* may be iz-c bug? SEGV must not use INT_MAX */
+    data = cs_getDomain(vint);
     cut_assert_equal_int(INT_MAX, data[0]);
     free(data);
+#endif
 
-    return;
+    vint = cs_createCSint(INT_MAX-1, INT_MAX-1);
+    cut_assert_not_null(vint);
+    cut_assert_equal_int(1, cs_getNbElements(vint));
+    data = cs_getDomain(vint);
+    cut_assert_equal_int(INT_MAX-1, data[0]);
+    free(data);
+
     vint = cs_createCSint(INT_MIN, INT_MIN);
     data = cs_getDomain(vint);
     cut_assert_equal_int(1, cs_getNbElements(vint));
