@@ -24,6 +24,16 @@
 ;;
 (test-section "cs-create-csint")
 
+(define (mktest min max)
+  (test* (format #f "domain {~D..~D}" min max)
+         is-a? (cs-create-csint min max) <csint>))
+
+(mktest 0 0)
+(mktest 0 CS_INT_MAX)
+(mktest CS_INT_MIN 0)
+(mktest CS_INT_MIN CS_INT_MAX)
+
+
 ;;
 ;; cs-create-named-csint
 ;;
@@ -59,7 +69,8 @@
 	   expect (cs-get-name vint))))
 
 (mktest "dummy" "dummy" 1 10)
-;(test* "nil" #f (cs-get-name (csint 0)))
+;; SEGV
+;;(test* "nil" #f (cs-get-name (csint 0)))
 
 ;;
 ;; cs-get-value
@@ -80,9 +91,26 @@
 (mktest CS_INT_MIN CS_INT_MIN 0)
 
 
+;;
+;; cs-get-next-value
+;;
 (test-section "cs-get-next-value")
-;; (test* "cs-get-next-value" 2 (cs-get-next-value (cs-create-csint 0 10) 1))
-;; (test* "cs-get-next-value" 2147483647 (cs-get-next-value (cs-create-csint 0 10) 11))
+
+(define (mktest expect base min max)
+  (test* (format #f "domain {~D..~D} next ~D" min max base)
+         expect (cs-get-next-value (cs-create-csint min max) base)))
+
+(mktest 1 0 1 10)
+(mktest 2 1 1 10)
+(mktest 3 2 1 10)
+(mktest 10 9 1 10)
+(mktest CS_INT_MAX 10 1 10)
+(mktest CS_INT_MAX 11 1 10)
+
+(mktest 2 1 1 CS_INT_MAX)
+(mktest 3 2 1 CS_INT_MAX)
+(mktest CS_INT_MAX  (- CS_INT_MAX 1) 1 CS_INT_MAX)
+(mktest CS_INT_MAX CS_INT_MAX 1 CS_INT_MAX)
 
 ;;
 ;; cs-get-previous-value
@@ -90,7 +118,7 @@
 (test-section "cs-get-previous-value")
 
 (define (mktest expect base min max)
-  (test* (format #f "domain {~D..~D} previous ~D " min max base)
+  (test* (format #f "domain {~D..~D} previous ~D" min max base)
          expect (cs-get-previous-value (cs-create-csint min max) base)))
 
 (mktest CS_INT_MIN 1 1 10)
