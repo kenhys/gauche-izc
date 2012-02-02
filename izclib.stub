@@ -153,10 +153,16 @@ static int g_errno = 0;
 (define-cproc cs-get-nb-constraints
   (vint::<csint>) ::<int>
   (expr "cs_getNbConstraints(vint)"))
+
 ;;  char* cs_getName(CSint* vint);
 (define-cproc cs-get-name
   (vint::<csint>) ::<const-cstring>
-  (expr "cs_getName(vint)"))
+  (body <const-cstring>?
+	"cs_printf(\"%A\\n\", vint);"
+	"char *str = cs_getName(vint);"
+	"printf(\"%p\\n\", str);"
+	"SCM_RESULT = SCM_NIL;"))
+
 ;;  int cs_getValue(CSint *vint);
 (define-cproc cs-get-value
   (vint::<csint>) ::<int>
@@ -178,14 +184,21 @@ static int g_errno = 0;
 (define-cproc cs-get-domain
   (vint::<csint>) ::<list>
   (body <list>
+        "printf(\"call cs-get-domain\\n\");"
         "int size = cs_getNbElements(vint);"
+        "if (size <= 0) {"
+        "printf(\"failed to get nb elements:%d\\n\", size);"
+        "SCM_RESULT=SCM_FALSE;"
+        "} else {"
+        "printf(\"failed to get nb elements:%d\\n\", size);"
         "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
         "int i=0;"
         "int *vals = cs_getDomain(vint);"
-        "for (i = 0; i < nSize; i++) {"
+        "for (i = 0; i < size; i++) {"
         "Scm_VectorSet(vec, i, SCM_OBJ(Scm_MakeInteger(vals[i])));";
         "}"
-        "SCM_RESULT=Scm_VectorToList(vec, 0, -1);"))
+        "SCM_RESULT=Scm_VectorToList(vec, 0, -1);"
+        "}"))
 ;;  IZBOOL cs_isIn(CSint *vint, int val);
 (define-cproc cs-is-in
   (vint::<csint>
