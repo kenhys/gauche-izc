@@ -157,11 +157,12 @@ static int g_errno = 0;
 ;;  char* cs_getName(CSint* vint);
 (define-cproc cs-get-name
   (vint::<csint>) ::<const-cstring>
-  (body <const-cstring>?
-	"cs_printf(\"%A\\n\", vint);"
-	"char *str = cs_getName(vint);"
-	"printf(\"%p\\n\", str);"
-	"SCM_RESULT = SCM_NIL;"))
+  (expr "cs_getName(vint)"))
+  ;; (body <const-cstring>
+  ;; 	"cs_printf(\"%A\\n\", vint);"
+  ;; 	"char *str = cs_getName(vint);"
+  ;; 	"printf(\"%p\\n\", str);"
+  ;; 	"SCM_RESULT = cs_getName(vint);"))
 
 ;;  int cs_getValue(CSint *vint);
 (define-cproc cs-get-value
