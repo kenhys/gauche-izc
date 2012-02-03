@@ -96,11 +96,13 @@ static int g_errno = 0;
         "if (vars != NULL) {"
         "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
         "ScmObj scm;";
-        "for (i = 0; i < size; i++) {"
+	"for (i = 0; i < size; i++) {"
+        "#if DEBUG"
         "cs_printf(\"vars[%d] %T\\n\", i, vars[i]);"
+        "#endif"
         "Scm_VectorSet(vec, i, CSINT_BOX(vars[i]));"
         "}"
-        "SCM_RESULT = vec;"
+	"SCM_RESULT = vec;"
         "}"))
 
 (define-cproc cs-create-csint-list
@@ -115,8 +117,10 @@ static int g_errno = 0;
         "ScmVector *vec = SCM_VECTOR(Scm_MakeVector(size, SCM_NIL));"
         "ScmObj scm;";
         "for (i = 0; i < size; i++) {"
+        "#if DEBUG"
         "cs_printf(\"vars[%d] %T\\n\", i, vars[i]);"
-        "Scm_VectorSet(vec, i, CSINT_BOX(vars[i]));"
+        "#endif"
+	"Scm_VectorSet(vec, i, CSINT_BOX(vars[i]));"
         "}"
         "SCM_RESULT = Scm_VectorToList(vec, 0, -1);"
         "}"))
@@ -513,18 +517,15 @@ static int g_errno = 0;
 ;; if */
 ;;  char cs_IfEq(CSint *vint1, CSint *vint2, int val1, int val2);
 (define-cproc cs-if-eq
-  (vint1::<csint>
-   vint2::<csint>
-   val1::<int>
-   val2::<int>)
-  (body <char>
+  (vint1::<csint> vint2::<csint> val1::<int> val2::<int>) ::<boolean>
+  (body <boolean>
         "if (cs_isInstantiated(vint1) == TRUE && cs_getValue(vint1) == val1) {"
         "vint2 = CSINT(val2);"
         "}"
         "if (cs_isInstantiated(vint2) == TRUE && cs_getValue(vint2) == val2) {"
         "vint1 = CSINT(val1);"
         "}"
-        "SCM_RESULT = SCM_INT_VALUE(SCM_TRUE);"))
+        "SCM_RESULT = cs_IfEq(vint1, vint2, val1, val2);"))
 ;;  char cs_IfNeq(CSint *vint1, CSint *vint2, int val1, int val2);
 (define-cproc cs-if-neq
   (vint1::<csint>
