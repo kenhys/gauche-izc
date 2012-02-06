@@ -934,13 +934,8 @@ static int g_errno = 0;
 
 ;;
 ;;
-;; Demon */
+;; Demon 
 ;;
-
-;;  IZBOOL cs_eventAllKnown(CSint **tint, int size,
-;;			     char (*allKnown)(CSint **tint, int size, void *extra),
-;;			     void *extra);
-
 
 ;;  IZBOOL cs_eventAllKnown(CSint **tint, int size,
 ;;			     char (*allKnown)(CSint **tint, int size, void *extra),
@@ -963,7 +958,7 @@ static int g_errno = 0;
 	   (begin
 	     (set! size (Scm_Length array))
 	     (set! tint (calloc (sizeof csintp_) size))
-	     (set! vec (Scm_ListToVector array 0 -1)))]
+	     (set! vec (SCM_VECTOR (Scm_ListToVector array 0 -1))))]
 	  [else
 	   (Scm_Error "list or vector required, but got")])
     (if (!= tint NULL)
@@ -975,38 +970,39 @@ static int g_errno = 0;
 	)
     (result (cs_eventAllKnown tint size cs_eventAllKnownBridge allknown))))
 
+;;
 ;;  IZBOOL cs_eventKnown(CSint **tint, int size,
 ;;			  char (*known)(int val, int index, CSint **tint, int size, void *extra),
 ;;			  void *extra);
 
 (define-cproc cs-event-known
-  (vint::<vector> known) ::<boolean>
-  (body <boolean>
-        "int size = SCM_VECTOR_SIZE(vint);"
-        "#if defined(DEBUG) && defined(DEBUG_FUNC)"
-        "printf(\"cs-event-known called.\\n\");"
-        "#endif"
-        "#if defined(DEBUG)"
-        "printf(\"vector size:%d\\n\", size);"
-        "#endif"
-        "ScmVector *vec = SCM_VECTOR(vint);"
-        "CSint **tint = SCM_NEW_ARRAY(CSint*, size);"
-        "int ret = SCM_INT_VALUE(SCM_FALSE);"
-        "if (tint != NULL) {"
-        "int i = 0;"
-        "for (i = 0; i < size; i++) {"
-        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
-        "#ifdef DEBUG"
-        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
-        "#endif"
-        "}"
-        "ret = cs_eventKnown(tint, size, cs_eventKnownBridge, known);"
-        "} else {"
-        "Scm_Error(\"memory allocation error for <csint>.\");"
-        "}"
-        "SCM_RESULT = SCM_INT_VALUE(ret);"
-        ))
-
+  (array known) ::<boolean>
+  (let* ([size::int 0]
+	 [tint::CSint** NULL]
+	 [vec::ScmVector* NULL]
+	 [retval::int 0]
+	 [i::int 0])
+    (cond [(SCM_VECTORP array)
+	   (begin
+	     (set! size (SCM_VECTOR_SIZE array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR array))
+	     )]
+	  [(SCM_LISTP array)
+	   (begin
+	     (set! size (Scm_Length array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR (Scm_ListToVector array 0 -1))))]
+	  [else
+	   (Scm_Error "list or vector required, but got")])
+    (if (!= tint NULL)
+	(for [(set! i 0) (< i size) (post++ i)]
+	     (set! (aref tint i) (CSINT_UNBOX (Scm_VectorRef vec i SCM_NIL)))
+	     (.if DEBUG
+		  (cs_printf "vint[%d] %T\n" i (aref tint i))))
+	;; error
+	)
+    (result (cs_eventKnown tint size cs_eventKnownBridge known))))
 
 ;;
 ;; in scheme, (define (callback
@@ -1015,76 +1011,103 @@ static int g_errno = 0;
 ;; 			   char (*newMin)(CSint *vint, int index, int oldMin, CSint **tint, int size, void *extra),
 ;; 			   void *extra);
 (define-cproc cs-event-new-min
-  (vint::<vector> newmin) ::<void>
-  (body <void>
-        "int size = SCM_VECTOR_SIZE(vint);"
-        "printf(\"vector size:%d\\n\", size);"
-        "ScmVector *vec = SCM_VECTOR(vint);"
-        "CSint **tint = calloc(sizeof(CSint*), size);"
-        "if (tint != NULL) {"
-        "int i = 0;"
-        "for (i = 0; i < size; i++) {"
-        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
-        "#ifdef DEBUG"
-        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
-        "#endif"
-        "}"
-        "cs_eventNewMin(tint, size, cs_eventNewMinBridge, newmin);"
-        "} else {"
-        "printf(\"failed to allocate memory.\\n\");"
-        "}"
-        ))
+  (array newmin) ::<void>
+  (let* ([size::int 0]
+	 [tint::CSint** NULL]
+	 [vec::ScmVector* NULL]
+	 [retval::int 0]
+	 [i::int 0])
+    (cond [(SCM_VECTORP array)
+	   (begin
+	     (set! size (SCM_VECTOR_SIZE array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR array))
+	     )]
+	  [(SCM_LISTP array)
+	   (begin
+	     (set! size (Scm_Length array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR (Scm_ListToVector array 0 -1))))]
+	  [else
+	   (Scm_Error "list or vector required, but got")])
+    (if (!= tint NULL)
+	(for [(set! i 0) (< i size) (post++ i)]
+	     (set! (aref tint i) (CSINT_UNBOX (Scm_VectorRef vec i SCM_NIL)))
+	     (.if DEBUG
+		  (cs_printf "vint[%d] %T\n" i (aref tint i))))
+	;; error
+	)
+    (cs_eventNewMin tint size cs_eventNewMinBridge newmin)))
+
 ;;  void cs_eventNewMax(CSint **tint, int size,
 ;; 			   char (*newMax)(CSint *vint, int index, int oldMax, CSint **tint, int size, void *extra),
 ;; 			   void *extra);
 (define-cproc cs-event-new-max
-  (vint::<vector>
-   newmax)
-  (body <void>
-        "int size = SCM_VECTOR_SIZE(vint);"
-        "printf(\"vector size:%d\\n\", size);"
-        "ScmVector *vec = SCM_VECTOR(vint);"
-        "CSint **tint = calloc(sizeof(CSint*), size);"
-        "if (tint != NULL) {"
-        "int i = 0;"
-        "for (i = 0; i < size; i++) {"
-        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
-        "#ifdef DEBUG"
-        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
-        "#endif"
-        "}"
-        "cs_eventNewMax(tint, size, cs_eventNewMaxBridge, newmax);"
-        "} else {"
-        ""
-        "}"
-        ))
+  (array newmax) ::<void>
+  (let* ([size::int 0]
+	 [tint::CSint** NULL]
+	 [vec::ScmVector* NULL]
+	 [retval::int 0]
+	 [i::int 0])
+    (cond [(SCM_VECTORP array)
+	   (begin
+	     (set! size (SCM_VECTOR_SIZE array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR array))
+	     )]
+	  [(SCM_LISTP array)
+	   (begin
+	     (set! size (Scm_Length array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR (Scm_ListToVector array 0 -1))))]
+	  [else
+	   (Scm_Error "list or vector required, but got")])
+    (if (!= tint NULL)
+	(for [(set! i 0) (< i size) (post++ i)]
+	     (set! (aref tint i) (CSINT_UNBOX (Scm_VectorRef vec i SCM_NIL)))
+	     (.if DEBUG
+		  (cs_printf "vint[%d] %T\n" i (aref tint i))))
+	;; error
+	)
+    (cs_eventNewMax tint size cs_eventNewMaxBridge newmax)))
+
 ;;  void cs_eventNeq(CSint **tint, int size,
 ;; 			char (*neq)(CSint *vint, int index, int neqValue, CSint **tint, int size, void *extra), 
 ;; 			void *extra);
 (define-cproc cs-event-neq
-  (vint::<vector>
-   neq)
-  (body <void>
-        "int size = SCM_VECTOR_SIZE(vint);"
-        "printf(\"vector size:%d\\n\", size);"
-        "ScmVector *vec = SCM_VECTOR(vint);"
-        "CSint **tint = calloc(sizeof(CSint*), size);"
-        "int i = 0;"
-        "for (i = 0; i < size; i++) {"
-        "tint[i] = CSINT_UNBOX(Scm_VectorRef(vec, i, SCM_NIL));"
-        "#ifdef DEBUG"
-        "cs_printf(\"vint[%d] %T\\n\", i, tint[i]);"
-        "#endif"
-        "}"
-        "cs_eventNeq(tint, size, cs_eventNeqBridge, neq);"
-        ))
+  (array neq)
+  (let* ([size::int 0]
+	 [tint::CSint** NULL]
+	 [vec::ScmVector* NULL]
+	 [retval::int 0]
+	 [i::int 0])
+    (cond [(SCM_VECTORP array)
+	   (begin
+	     (set! size (SCM_VECTOR_SIZE array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR array))
+	     )]
+	  [(SCM_LISTP array)
+	   (begin
+	     (set! size (Scm_Length array))
+	     (set! tint (calloc (sizeof csintp_) size))
+	     (set! vec (SCM_VECTOR (Scm_ListToVector array 0 -1))))]
+	  [else
+	   (Scm_Error "list or vector required, but got")])
+    (if (!= tint NULL)
+	(for [(set! i 0) (< i size) (post++ i)]
+	     (set! (aref tint i) (CSINT_UNBOX (Scm_VectorRef vec i SCM_NIL)))
+	     (.if DEBUG
+		  (cs_printf "vint[%d] %T\n" i (aref tint i))))
+	;; error
+	)
+    (cs_eventNeq tint size cs_eventNeqBridge neq)))
+
 ;; Context */
 
 ;;  void cs_backtrack(CSint *vint, int index, void (*backtrack)(CSint *vint, int index));
 (define-cproc cs-backtrack
-  (vint::<csint>
-   index::<int>
-   backtrack)
+  (vint::<csint> index::<int> backtrack)
   (body <void>
         "int size = SCM_VECTOR_SIZE(vint);"
         "printf(\"vector size:%d\\n\", size);"
