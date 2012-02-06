@@ -214,3 +214,157 @@ static void cs_foundWithCostBridge(CSint **allvars, int nbVars, CSint *vint)
 #endif
 }
     
+
+static char cs_eventAllKnownBridge(CSint **tint, int size, void *extra)
+{
+  ScmObj proc = SCM_OBJ(extra);
+  ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+  ScmVector *vec = SCM_VECTOR(obj);
+  int i = 0;
+  for (i = 0; i < size; i++) {
+    Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+  }
+  ScmObj r = Scm_ApplyRec(proc, SCM_OBJ(vec));
+  return TRUE;
+}
+
+
+static char cs_eventKnownBridge(int val, int index, CSint **tint, int size, void *extra)
+{
+  ScmObj proc = SCM_OBJ(extra);
+  ScmObj sval = Scm_MakeInteger(val);
+  ScmObj sindex = Scm_MakeInteger(index);
+  ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+  ScmVector *vec = SCM_VECTOR(obj);
+  int i = 0;
+  for (i = 0; i < size; i++) {
+    Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+  }
+  ScmObj r = SCM_UNBOUND;
+  if (SCM_PROCEDUREP(proc) == TRUE) {
+    r = Scm_ApplyRec(proc, SCM_LIST3(sval, sindex, SCM_OBJ(vec)));
+  }
+  if (SCM_EQ(r, SCM_TRUE)) {
+#ifdef DEBUG
+    printf("event known procedure return #t\n");
+#endif
+    return TRUE;
+  } else {
+#ifdef DEBUG
+    if (SCM_EQ(r, SCM_FALSE)) {
+      printf("event known procedure r is #f\n");
+    }
+    printf("event known procedure return #f\n");
+#endif
+    return FALSE;
+  }
+}
+
+
+static char cs_eventNewMinBridge(CSint *vint, int index, int oldMin, CSint **tint, int size, void *extra)
+{
+  ScmObj proc = SCM_OBJ(extra);
+  ScmObj sindex = Scm_MakeInteger(index);
+  ScmObj soldMin = Scm_MakeInteger(oldMin);
+  ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+  ScmVector *vec = SCM_VECTOR(obj);
+  int i = 0;
+  for (i = 0; i < size; i++) {
+    Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+  }
+  ScmObj r = SCM_UNBOUND;
+  if (SCM_PROCEDUREP(proc) == TRUE) {
+    r = Scm_ApplyRec(proc, SCM_LIST4(CSINT_BOX(vint), sindex, soldMin, SCM_OBJ(vec)));
+  }
+  if (SCM_EQ(r, SCM_TRUE)) {
+#ifdef DEBUG
+    printf("event new min procedure return #t\n");
+#endif
+    return TRUE;
+  } else {
+#ifdef DEBUG
+    if (SCM_EQ(r, SCM_FALSE)) {
+      printf("event new min procedure r is #f\n");
+    }
+    printf("event new min procedure return #f\n");
+#endif
+    return FALSE;
+  }
+  return TRUE;
+}
+
+static char cs_eventNewMaxBridge(CSint *vint, int index, int oldMax, CSint **tint, int size, void *extra)
+{
+  ScmObj proc = SCM_OBJ(extra);
+  ScmObj sindex = Scm_MakeInteger(index);
+  ScmObj soldMax = Scm_MakeInteger(oldMax);
+  ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+  ScmVector *vec = SCM_VECTOR(obj);
+  int i = 0;
+  for (i = 0; i < size; i++) {
+    Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+  }
+  ScmObj r = SCM_UNBOUND;
+  if (SCM_PROCEDUREP(proc) == TRUE) {
+    r = Scm_ApplyRec(proc, SCM_LIST4(CSINT_BOX(vint), sindex, soldMax, SCM_OBJ(vec)));
+  }
+  if (SCM_EQ(r, SCM_TRUE)) {
+#ifdef DEBUG
+    printf("event new max procedure return #t\n");
+#endif
+    return TRUE;
+  } else {
+#ifdef DEBUG
+    if (SCM_EQ(r, SCM_FALSE)) {
+      printf("event new max procedure r is #f\n");
+    }
+    printf("event new max procedure return #f\n");
+#endif
+    return FALSE;
+  }
+  return TRUE;
+}
+static char cs_eventNeqBridge(CSint *vint, int index, int neqValue, CSint **tint, int size, void *extra)
+{
+  ScmObj proc = SCM_OBJ(extra);
+  ScmObj sindex = Scm_MakeInteger(index);
+  ScmObj svalue = Scm_MakeInteger(neqValue);
+  ScmObj obj = Scm_MakeVector(size, SCM_NIL);
+  ScmVector *vec = SCM_VECTOR(obj);
+  int i = 0;
+  for (i = 0; i < size; i++) {
+    Scm_VectorSet(vec, i, CSINT_BOX(tint[i]));
+  }
+  ScmObj r = SCM_UNBOUND;
+  if (SCM_PROCEDUREP(proc) == TRUE) {
+    r = Scm_ApplyRec(proc, SCM_LIST4(CSINT_BOX(vint), sindex, svalue, SCM_OBJ(vec)));
+  }
+  if (SCM_EQ(r, SCM_TRUE)) {
+#ifdef DEBUG
+    printf("event neq procedure return #t\n");
+#endif
+    return TRUE;
+  } else {
+#ifdef DEBUG
+    if (SCM_EQ(r, SCM_FALSE)) {
+      printf("event neq procedure r is #f\n");
+    }
+    printf("event neq procedure return #f\n");
+#endif
+    return FALSE;
+  }
+  return TRUE;
+}
+
+
+
+static void cs_backtrackBridge(CSint *vint, int index)
+{
+  ScmObj proc = SCM_OBJ(g_backtrackProc);
+#ifdef DEBUG
+  printf("call cs_backtrackBridge\n");
+#endif
+  return;
+}
+
+

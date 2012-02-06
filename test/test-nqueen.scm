@@ -88,7 +88,7 @@
 (define allvars (cs-create-csint-array nqueens 1 8))
 (cs-event-known allvars known-queen)
 (cs-search allvars 'elements-min)
-(test* "cs-search 'elements-min" '(1 7 2 6 3 8 4 5) (map cs-get-value allvars))
+(test* "cs-search 'elements-min" '(1 7 4 6 8 2 5 3) (map cs-get-value allvars))
 
 (test-section "cs-find-all")
 ;; we decide to solve 8 queen problem!

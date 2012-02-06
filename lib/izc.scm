@@ -8,7 +8,7 @@
 (select-module izc)
 
 ;; Loads extension
-(dynamic-load "izc")
+(dynamic-load "gauche--izc")
 
 ;;
 ;; Put your Scheme definitions here

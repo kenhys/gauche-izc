@@ -25,8 +25,9 @@
 (test-section "cs-create-csint")
 
 (define (mktest min max)
-  (test* (format #f "domain {~D..~D}" min max)
-         is-a? (cs-create-csint min max) <csint>))
+  (let* ((vint (cs-create-csint min max)))
+    (test* (format #f "domain {~D..~D}" min max)
+	   #t (is-a? vint <csint>))))
 
 (mktest 0 0)
 (mktest 0 CS_INT_MAX)

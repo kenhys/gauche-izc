@@ -55,9 +55,9 @@ static void csint_array_cleanup(ScmObj obj)
 /*
  * Module initialization function.
  */
-extern void Scm_Init_izclib(ScmModule*);
+extern void Scm_Init_gauche__izclib(ScmModule*);
 
-void Scm_Init_izc(void)
+void Scm_Init_gauche__izc(void)
 {
     ScmModule *mod;
 
