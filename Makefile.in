@@ -31,7 +31,7 @@ IZ_LDFLAGS = @IZ_LDFLAGS@
 # Module-specific stuff
 PACKAGE   = izc
 
-ARCHFILES = izc.$(SOEXT)
+ARCHFILES = gauche--izc.$(SOEXT)
 SCMFILES  = $(srcdir)/izc.scm
 HEADERS   = 
 
@@ -46,11 +46,8 @@ GAUCHE_PKGARCHDIR = $(DESTDIR)@GAUCHE_PKGARCHDIR@
 
 izc_SRCS = $(srcdir)/izc.c $(srcdir)/izclib.stub
 
-all : $(TARGET)
-
-izc.$(SOEXT): $(izc_SRCS) izclib-bridge.c
-	$(GAUCHE_PACKAGE) compile \
-	  --local=$(LOCAL_PATHS) --cflags=$(IZ_CPPFLAGS) --ldflags=$(IZ_LDFLAGS) --libs=-liz --verbose gauche--izc $(izc_SRCS)
+all :
+	cd src; $(MAKE) all
 
 check : all
 	@rm -f test.log

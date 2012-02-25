@@ -62,7 +62,7 @@ dnl Add your macro calls to check existence of programs, if you have any.
 dnl Check for libraries
 dnl Add your macro calls to check required libraries, if you have any.
 
-m4_include([iz.m4])
+m4_include([m4/iz.m4])
 
 dnl Creating gpd (gauche package description) file
 GAUCHE_PACKAGE_CONFIGURE_ARGS="`echo ""$ac_configure_args"" | sed 's/[\\""\`\$]/\\\&/g'`"
@@ -73,5 +73,5 @@ $GAUCHE_PACKAGE make-gpd "$PACKAGE_NAME" \
 
 dnl Output
 echo $PACKAGE_VERSION > VERSION
-AC_OUTPUT(Makefile)
+AC_OUTPUT(Makefile src/Makefile)
 
